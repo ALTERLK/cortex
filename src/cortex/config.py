@@ -27,6 +27,10 @@ class Settings(BaseSettings):
     llm_base_url: str = "https://api.deepseek.com"
     llm_model: str = "deepseek-chat"
 
+    # --- local model cache ---
+    # Override to redirect HuggingFace downloads away from the default C: cache.
+    hf_home: str = ""
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

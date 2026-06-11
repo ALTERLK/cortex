@@ -43,3 +43,16 @@ each entry should be explainable in ~30 seconds with a trade-off.
   traced back to its origin file — the citation requirement drives this from day one.
 - **pypdf for PDF loading, lazy import.** Only imported when a .pdf path is detected,
   so the non-PDF code path has no startup cost from the PDF library.
+
+## 2026-06-11 · M2
+
+- **BGE-M3 for embeddings, local via sentence-transformers.** Multilingual (Chinese +
+  English), 1024-dim, no API cost. HF_HOME redirected to E: drive via config to avoid
+  filling the limited C: system partition.
+- **Qdrant local file mode, no Docker.** `QdrantClient(path=...)` stores the index
+  on disk; API is identical to Docker/cloud modes so switching later is one line.
+- **Idempotent upserts via deterministic UUID.** Each chunk ID is SHA-256(source +
+  chunk_index) truncated to a UUID. Re-ingesting the same file updates in place —
+  no duplicates accumulate across runs.
+- **`query_points()` over deprecated `search()`.** qdrant-client ≥1.7 renamed the
+  search method; noted in code for future SDK upgrades.
