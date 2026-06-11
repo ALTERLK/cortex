@@ -40,6 +40,12 @@
 
   <footer class="composer-wrap">
     <form id="composer" class="composer glass">
+      <div class="mode-switch" role="radiogroup" aria-label="Answer mode">
+        <button type="button" class="mode-btn active" data-mode="rag"
+                title="Retrieve once, then answer — fast and cheap">RAG</button>
+        <button type="button" class="mode-btn" data-mode="agent"
+                title="The LLM decides when and how many times to search">Agent</button>
+      </div>
       <input id="question" type="text" placeholder="Ask a question…"
              autocomplete="off" spellcheck="false" maxlength="2000">
       <button id="send" type="submit" aria-label="Send">
@@ -60,11 +66,25 @@
   <template id="tpl-assistant-msg">
     <div class="msg msg-assistant">
       <div class="bubble bubble-assistant">
+        <div class="tools"></div>
         <div class="answer"></div>
         <div class="sources"></div>
         <div class="stats"></div>
       </div>
     </div>
+  </template>
+
+  <template id="tpl-tool-card">
+    <details class="tool-card glass-card">
+      <summary>
+        <svg viewBox="0 0 24 24" width="13" height="13" aria-hidden="true" class="tool-icon">
+          <circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/>
+          <path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        <span class="tool-query"></span>
+      </summary>
+      <p class="tool-result"></p>
+    </details>
   </template>
 
   <template id="tpl-typing">

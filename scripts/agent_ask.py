@@ -54,10 +54,8 @@ def main() -> None:
 
     # --- final answer ---
     print("=" * 60)
-    # Strip <thinking>...</thinking> blocks from display (extended thinking models)
-    import re
-    answer = re.sub(r"<thinking>.*?</thinking>\s*", "", result.answer, flags=re.DOTALL).strip()
-    print(answer)
+    from cortex.llm.postprocess import strip_thinking
+    print(strip_thinking(result.answer))
     print("=" * 60)
 
     print(f"\nIterations: {result.iterations}  |  Tokens: {result.usage.input_tokens} in / {result.usage.output_tokens} out")

@@ -16,6 +16,17 @@ const input = document.getElementById("question");
 const sendBtn = document.getElementById("send");
 const toast = document.getElementById("toast");
 
+// "rag" = retrieve once then answer; "agent" = M4 tool-use loop.
+let mode = "rag";
+
+document.querySelectorAll(".mode-btn").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    mode = btn.dataset.mode;
+    document.querySelectorAll(".mode-btn").forEach((b) =>
+      b.classList.toggle("active", b === btn));
+  });
+});
+
 // NOTE (learning): textContent (not innerHTML) everywhere user/LLM text is
 // inserted — this is what prevents XSS. The only HTML we ever construct
 // ourselves is the citation chips, built from numbers we validated.
@@ -84,18 +95,34 @@ function renderSources(container, sources) {
   });
 }
 
+function renderToolCalls(container, toolCalls) {
+  toolCalls.forEach((tc) => {
+    const card = el("tpl-tool-card");
+    const label = tc.name === "search_knowledge_base"
+      ? (tc.arguments.query || "")
+      : tc.name;
+    card.querySelector(".tool-query").textContent = label;
+    card.querySelector(".tool-result").textContent = tc.result;
+    container.appendChild(card);
+  });
+}
+
 function addAssistantMessage(data) {
   const node = el("tpl-assistant-msg");
   const sources = data.sources || [];
 
+  renderToolCalls(node.querySelector(".tools"), data.tool_calls || []);
   renderAnswer(node.querySelector(".answer"), data.answer, sources.length);
   renderSources(node.querySelector(".sources"), sources);
 
-  const cost = data.cost_usd_est;
-  node.querySelector(".stats").textContent =
+  let stats =
     `${(data.latency_ms / 1000).toFixed(1)}s · ` +
     `${data.input_tokens}↑ ${data.output_tokens}↓ tokens · ` +
-    `$${cost.toFixed(5)}`;
+    `$${data.cost_usd_est.toFixed(5)}`;
+  if (data.mode === "agent") {
+    stats += ` · ${data.iterations} iteration${data.iterations === 1 ? "" : "s"}`;
+  }
+  node.querySelector(".stats").textContent = stats;
 
   chat.appendChild(node);
   scrollToBottom();
@@ -127,7 +154,7 @@ async function ask(question) {
     const resp = await fetch("/ask", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ question }),
+      body: JSON.stringify({ question, mode }),
     });
     if (!resp.ok) {
       const detail = await resp.json().catch(() => ({}));

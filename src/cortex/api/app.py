@@ -19,6 +19,8 @@ from fastapi import FastAPI, Request, Response
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
+from cortex.agent.loop import AgentLoop
+from cortex.agent.tools import ToolExecutor
 from cortex.ingest.embedder import Embedder
 from cortex.ingest.store import VectorStore
 from cortex.llm import get_llm_client
@@ -36,10 +38,15 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     store = VectorStore(path="data/qdrant")
     store.ensure_collection(embedder.dimension)
 
+    retriever = Retriever(store, embedder)
+    llm = get_llm_client()
+
     app.state.embedder = embedder
     app.state.store = store
-    app.state.retriever = Retriever(store, embedder)
-    app.state.generator = Generator(get_llm_client())
+    app.state.retriever = retriever
+    app.state.generator = Generator(llm)
+    # The M4 hand-written tool-use loop, exposed via mode="agent" on /ask.
+    app.state.agent = AgentLoop(llm, ToolExecutor(retriever))
 
     logger.info(json.dumps({"event": "startup", "status": "ready"}))
     yield

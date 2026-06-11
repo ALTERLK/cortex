@@ -14,6 +14,7 @@ from typing import Any
 import pytest
 from fastapi.testclient import TestClient
 
+from cortex.agent.loop import AgentResponse, ToolCallRecord
 from cortex.api.app import create_app
 from cortex.ingest.store import SearchResult
 from cortex.llm.base import TokenUsage
@@ -26,16 +27,33 @@ from cortex.rag.generator import GeneratorResponse
 
 
 class _FakeRetriever:
-    def retrieve(self, query: str) -> list[SearchResult]:
+    def retrieve(self, query: str, top_k: int | None = None) -> list[SearchResult]:
         return [SearchResult(score=0.9, text="Test passage.", source="test.md", chunk_index=0)]
 
 
 class _FakeGenerator:
     def generate(self, question: str, passages: list[SearchResult]) -> GeneratorResponse:
         return GeneratorResponse(
-            answer="Test answer [1].",
+            # The <thinking> block must be stripped by the API layer.
+            answer="<thinking>Let me check the passages.</thinking>Test answer [1].",
             passages=passages,
             usage=TokenUsage(input_tokens=100, output_tokens=50),
+        )
+
+
+class _FakeAgent:
+    def run(self, question: str) -> AgentResponse:
+        return AgentResponse(
+            answer="<thinking>Searching first.</thinking>Agent answer [1].",
+            tool_calls=[
+                ToolCallRecord(
+                    name="search_knowledge_base",
+                    arguments={"query": "test query"},
+                    result="[1] (source: test.md, score: 0.900)\nTest passage.",
+                )
+            ],
+            iterations=2,
+            usage=TokenUsage(input_tokens=300, output_tokens=80),
         )
 
 
@@ -72,6 +90,7 @@ def client():
     async def test_lifespan(a):
         a.state.retriever = _FakeRetriever()
         a.state.generator = _FakeGenerator()
+        a.state.agent = _FakeAgent()
         a.state.embedder = _FakeEmbedder()
         a.state.store = _FakeStore()
         yield
@@ -141,6 +160,51 @@ def test_ask_missing_question_is_422(client: TestClient) -> None:
 def test_ask_invalid_top_k_is_422(client: TestClient) -> None:
     resp = client.post("/ask", json={"question": "Q?", "top_k": 0})
     assert resp.status_code == 422
+
+
+# ---------------------------------------------------------------------------
+# /ask — agent mode
+# ---------------------------------------------------------------------------
+
+
+def test_ask_default_mode_is_rag(client: TestClient) -> None:
+    resp = client.post("/ask", json={"question": "Q?"})
+    data = resp.json()
+    assert data["mode"] == "rag"
+    assert data["iterations"] is None
+    assert data["tool_calls"] == []
+
+
+def test_ask_agent_mode_returns_tool_calls(client: TestClient) -> None:
+    resp = client.post("/ask", json={"question": "Q?", "mode": "agent"})
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["mode"] == "agent"
+    assert data["answer"] == "Agent answer [1]."
+    assert data["iterations"] == 2
+    assert len(data["tool_calls"]) == 1
+    assert data["tool_calls"][0]["name"] == "search_knowledge_base"
+    assert data["tool_calls"][0]["arguments"] == {"query": "test query"}
+    assert data["sources"] == []
+
+
+def test_ask_agent_mode_token_usage(client: TestClient) -> None:
+    resp = client.post("/ask", json={"question": "Q?", "mode": "agent"})
+    data = resp.json()
+    assert data["input_tokens"] == 300
+    assert data["output_tokens"] == 80
+
+
+def test_ask_invalid_mode_is_422(client: TestClient) -> None:
+    resp = client.post("/ask", json={"question": "Q?", "mode": "chaos"})
+    assert resp.status_code == 422
+
+
+def test_ask_strips_thinking_blocks(client: TestClient) -> None:
+    # _FakeGenerator embeds a <thinking> block; the API must remove it.
+    resp = client.post("/ask", json={"question": "Q?"})
+    assert resp.json()["answer"] == "Test answer [1]."
+    assert "<thinking>" not in resp.json()["answer"]
 
 
 # ---------------------------------------------------------------------------

@@ -31,8 +31,12 @@ class Retriever:
         self._embedder = embedder
         self._top_k = top_k
 
-    def retrieve(self, query: str) -> list[SearchResult]:
+    def retrieve(self, query: str, top_k: int | None = None) -> list[SearchResult]:
         """Return the top-k most relevant passages for *query*.
+
+        Args:
+            query: Natural-language search query.
+            top_k: Optional per-call override of the instance default.
 
         NOTE (learning): the query is embedded with the same model used at
         ingest time. Using a different model would compare apples to oranges —
@@ -40,4 +44,4 @@ class Retriever:
         meaningless.
         """
         vector = self._embedder.embed([query])[0]
-        return self._store.search(vector, top_k=self._top_k)
+        return self._store.search(vector, top_k=top_k or self._top_k)
