@@ -69,3 +69,19 @@ each entry should be explainable in ~30 seconds with a trade-off.
 - **Generator returns passages alongside the answer.** The CLI and future API
   layers can display source provenance without re-querying the store — one round
   trip does both retrieval and generation context.
+
+## 2026-06-11 · M4
+
+- **Hand-written loop over any framework.** The entire agent is a for-loop over
+  LLM calls; no LangChain/LangGraph. This makes every step debuggable and
+  explainable, which is the Phase 1 goal. LangGraph enters at P2-C where
+  multi-agent orchestration genuinely earns its complexity.
+- **Max-iterations guard (default 10).** Without it, a hallucinating or confused
+  LLM can call tools forever. The guard is the minimum viable safety mechanism;
+  a production system would also add a budget cap in tokens.
+- **Tool result re-serialises arguments to JSON string.** The OpenAI protocol
+  requires `function.arguments` to be a JSON *string*, not a dict. Our ToolCall
+  stores a parsed dict internally; we serialise back at the protocol boundary.
+- **`<thinking>` blocks stripped in the CLI.** The extended-thinking model
+  (claude-haiku-4-5-20251001-thinking) emits reasoning in `<thinking>` tags;
+  stripping them keeps the displayed answer clean without losing the actual reply.
