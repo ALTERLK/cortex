@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import os
 
+
 # Apply HF_HOME from .env before the huggingface libraries read it.
 # Must happen before any sentence_transformers / transformers import.
 def _apply_hf_home() -> None:

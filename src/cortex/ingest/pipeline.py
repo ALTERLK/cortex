@@ -27,7 +27,6 @@ from cortex.ingest.embedder import Embedder
 from cortex.ingest.loader import load_document
 from cortex.ingest.store import VectorStore
 
-
 _SUPPORTED_GLOB = "**/*.{md,txt,pdf}"
 
 

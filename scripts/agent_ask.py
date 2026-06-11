@@ -58,7 +58,8 @@ def main() -> None:
     print(strip_thinking(result.answer))
     print("=" * 60)
 
-    print(f"\nIterations: {result.iterations}  |  Tokens: {result.usage.input_tokens} in / {result.usage.output_tokens} out")
+    usage = result.usage
+    print(f"\nIterations: {result.iterations} | Tokens: {usage.input_tokens} in / {usage.output_tokens} out")
 
 
 if __name__ == "__main__":

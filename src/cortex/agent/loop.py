@@ -16,12 +16,11 @@ the raw loop makes you able to explain and debug any framework that wraps it.
 from __future__ import annotations
 
 import json
+from collections.abc import Iterator
 from dataclasses import dataclass, field
-from typing import Iterator
 
 from cortex.agent.tools import TOOL_SCHEMAS, ToolExecutor
 from cortex.llm.base import LLMClient, TokenUsage
-
 
 _SYSTEM_PROMPT = """\
 You are Cortex, a personal knowledge assistant. To answer questions accurately,

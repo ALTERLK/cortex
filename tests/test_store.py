@@ -10,12 +10,8 @@ from __future__ import annotations
 
 import random
 
-import pytest
-
-from cortex.ingest.chunker import Chunk, RecursiveCharacterChunker
-from cortex.ingest.loader import Document
+from cortex.ingest.chunker import Chunk
 from cortex.ingest.store import VectorStore, _stable_id
-
 
 # ---------------------------------------------------------------------------
 # Helpers

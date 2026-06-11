@@ -6,24 +6,18 @@ All offline — no LLM calls, no Qdrant, no embedding model.
 from __future__ import annotations
 
 import json
-import tempfile
-from pathlib import Path
-from typing import Any
 
 import pytest
 
-from cortex.eval.dataset import QAPair, load_dataset
+from cortex.eval.dataset import load_dataset
 from cortex.eval.metrics import (
     _parse_judge_response,
     compute_retrieval_hit,
     hit_rate,
-    judge_answer,
     mrr,
 )
 from cortex.eval.runner import EvalReport, EvalResult
 from cortex.ingest.store import SearchResult
-from cortex.llm.base import LLMResponse, TokenUsage
-
 
 # ---------------------------------------------------------------------------
 # Metric unit tests (pure functions)

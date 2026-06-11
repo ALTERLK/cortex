@@ -13,7 +13,6 @@ from __future__ import annotations
 from cortex.ingest.store import SearchResult
 from cortex.rag.retriever import Retriever
 
-
 # ---------------------------------------------------------------------------
 # Tool schemas (sent to the LLM)
 # ---------------------------------------------------------------------------

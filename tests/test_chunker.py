@@ -6,9 +6,8 @@ no network calls.
 
 import pytest
 
-from cortex.ingest.chunker import Chunk, RecursiveCharacterChunker
+from cortex.ingest.chunker import RecursiveCharacterChunker
 from cortex.ingest.loader import Document, load_document
-
 
 # ---------------------------------------------------------------------------
 # Chunker tests

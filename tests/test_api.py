@@ -20,7 +20,6 @@ from cortex.ingest.store import SearchResult
 from cortex.llm.base import TokenUsage
 from cortex.rag.generator import GeneratorResponse
 
-
 # ---------------------------------------------------------------------------
 # Fakes
 # ---------------------------------------------------------------------------

@@ -8,13 +8,10 @@ from __future__ import annotations
 
 from typing import Any
 
-import pytest
-
 from cortex.agent.loop import AgentLoop, _assistant_message, _tool_result_message
-from cortex.agent.tools import ToolExecutor, _format_search_results
+from cortex.agent.tools import _format_search_results
 from cortex.ingest.store import SearchResult
 from cortex.llm.base import LLMResponse, TokenUsage, ToolCall
-
 
 # ---------------------------------------------------------------------------
 # Fakes

@@ -1,0 +1,206 @@
+[06/11/26 20:21:35] INFO     Processing request of type           server.py:727
+                             ListToolsRequest                                  
+                    INFO     Processing request of type           server.py:727
+                             CallToolRequest                                   
+[cortex-mcp] loading embedder¡­
+                    INFO     No device provided, using cpu         model.py:183
+[06/11/26 20:21:36] INFO     HTTP Request: HEAD                 _client.py:1025
+                             https://huggingface.co/BAAI/bge-m3                
+                             /resolve/main/modules.json                        
+                             "HTTP/1.1 307 Temporary Redirect"                 
+                    INFO     HTTP Request: HEAD                 _client.py:1025
+                             https://huggingface.co/api/resolve                
+                             -cache/models/BAAI/bge-m3/5617a9f6                
+                             1b028005a4858fdac845db406aefb181/m                
+                             odules.json "HTTP/1.1 200 OK"                     
+[06/11/26 20:21:37] INFO     HTTP Request: HEAD                 _client.py:1025
+                             https://huggingface.co/BAAI/bge-m3                
+                             /resolve/main/config_sentence_tran                
+                             sformers.json "HTTP/1.1 307                       
+                             Temporary Redirect"                               
+                    INFO     HTTP Request: HEAD                 _client.py:1025
+                             https://huggingface.co/api/resolve                
+                             -cache/models/BAAI/bge-m3/5617a9f6                
+                             1b028005a4858fdac845db406aefb181/c                
+                             onfig_sentence_transformers.json                  
+                             "HTTP/1.1 200 OK"                                 
+                    INFO     Loading SentenceTransformer model     model.py:992
+                             from BAAI/bge-m3.                                 
+                    INFO     HTTP Request: HEAD                 _client.py:1025
+                             https://huggingface.co/BAAI/bge-m3                
+                             /resolve/main/config_sentence_tran                
+                             sformers.json "HTTP/1.1 307                       
+                             Temporary Redirect"                               
+                    INFO     HTTP Request: HEAD                 _client.py:1025
+                             https://huggingface.co/api/resolve                
+                             -cache/models/BAAI/bge-m3/5617a9f6                
+                             1b028005a4858fdac845db406aefb181/c                
+                             onfig_sentence_transformers.json                  
+                             "HTTP/1.1 200 OK"                                 
+[06/11/26 20:21:38] INFO     HTTP Request: HEAD                 _client.py:1025
+                             https://huggingface.co/BAAI/bge-m3                
+                             /resolve/main/README.md "HTTP/1.1                 
+                             307 Temporary Redirect"                           
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+                    WARNING  Warning: You are sending              _http.py:904
+                             unauthenticated requests to the HF                
+                             Hub. Please set a HF_TOKEN to enable              
+                             higher rate limits and faster                     
+                             downloads.                                        
+                    INFO     HTTP Request: HEAD                 _client.py:1025
+                             https://huggingface.co/api/resolve                
+                             -cache/models/BAAI/bge-m3/5617a9f6                
+                             1b028005a4858fdac845db406aefb181/R                
+                             EADME.md "HTTP/1.1 200 OK"                        
+                    INFO     HTTP Request: HEAD                 _client.py:1025
+                             https://huggingface.co/BAAI/bge-m3                
+                             /resolve/main/modules.json                        
+                             "HTTP/1.1 307 Temporary Redirect"                 
+                    INFO     HTTP Request: HEAD                 _client.py:1025
+                             https://huggingface.co/api/resolve                
+                             -cache/models/BAAI/bge-m3/5617a9f6                
+                             1b028005a4858fdac845db406aefb181/m                
+                             odules.json "HTTP/1.1 200 OK"                     
+[06/11/26 20:21:39] INFO     HTTP Request: HEAD                 _client.py:1025
+                             https://huggingface.co/BAAI/bge-m3                
+                             /resolve/main/sentence_bert_config                
+                             .json "HTTP/1.1 307 Temporary                     
+                             Redirect"                                         
+                    INFO     HTTP Request: HEAD                 _client.py:1025
+                             https://huggingface.co/api/resolve                
+                             -cache/models/BAAI/bge-m3/5617a9f6                
+                             1b028005a4858fdac845db406aefb181/s                
+                             entence_bert_config.json "HTTP/1.1                
+                             200 OK"                                           
+                    INFO     HTTP Request: HEAD                 _client.py:1025
+                             https://huggingface.co/BAAI/bge-m3                
+                             /resolve/main/adapter_config.json                 
+                             "HTTP/1.1 404 Not Found"                          
+[06/11/26 20:21:40] INFO     HTTP Request: HEAD                 _client.py:1025
+                             https://huggingface.co/BAAI/bge-m3                
+                             /resolve/main/config.json                         
+                             "HTTP/1.1 307 Temporary Redirect"                 
+                    INFO     HTTP Request: HEAD                 _client.py:1025
+                             https://huggingface.co/api/resolve                
+                             -cache/models/BAAI/bge-m3/5617a9f6                
+                             1b028005a4858fdac845db406aefb181/c                
+                             onfig.json "HTTP/1.1 200 OK"                      
+                    INFO     HTTP Request: HEAD                 _client.py:1025
+                             https://huggingface.co/BAAI/bge-m3                
+                             /resolve/main/model.safetensors                   
+                             "HTTP/1.1 404 Not Found"                          
+                    INFO     HTTP Request: GET                  _client.py:1025
+                             https://huggingface.co/api/models/                
+                             BAAI/bge-m3 "HTTP/1.1 200 OK"                     
+[06/11/26 20:21:41] INFO     HTTP Request: GET                  _client.py:1025
+                             https://huggingface.co/api/models/                
+                             BAAI/bge-m3/commits/main "HTTP/1.1                
+                             200 OK"                                           
+                    INFO     HTTP Request: GET                  _client.py:1025
+                             https://huggingface.co/api/models/                
+                             BAAI/bge-m3/discussions?p=0                       
+                             "HTTP/1.1 200 OK"                                 
+                    INFO     HTTP Request: GET                  _client.py:1025
+                             https://huggingface.co/api/models/                
+                             BAAI/bge-m3/commits/refs%2Fpr%2F13                
+                             0 "HTTP/1.1 200 OK"                               
+[06/11/26 20:21:42] INFO     HTTP Request: HEAD                 _client.py:1025
+                             https://huggingface.co/BAAI/bge-m3                
+                             /resolve/main/processor_config.jso                
+                             n "HTTP/1.1 404 Not Found"                        
+                    INFO     HTTP Request: HEAD                 _client.py:1025
+                             https://huggingface.co/BAAI/bge-m3                
+                             /resolve/refs%2Fpr%2F130/model.saf                
+                             etensors.index.json "HTTP/1.1 404                 
+                             Not Found"                                        
+                    INFO     HTTP Request: HEAD                 _client.py:1025
+                             https://huggingface.co/BAAI/bge-m3                
+                             /resolve/main/preprocessor_config.                
+                             json "HTTP/1.1 404 Not Found"                     
+                    INFO     HTTP Request: HEAD                 _client.py:1025
+                             https://huggingface.co/BAAI/bge-m3                
+                             /resolve/refs%2Fpr%2F130/model.saf                
+                             etensors "HTTP/1.1 302 Found"                     
+                    INFO     HTTP Request: HEAD                 _client.py:1025
+                             https://huggingface.co/BAAI/bge-m3                
+                             /resolve/main/video_preprocessor_c                
+                             onfig.json "HTTP/1.1 404 Not                      
+                             Found"                                            
+[06/11/26 20:21:43] INFO     HTTP Request: HEAD                 _client.py:1025
+                             https://huggingface.co/BAAI/bge-m3                
+                             /resolve/main/preprocessor_config.                
+                             json "HTTP/1.1 404 Not Found"                     
+                    INFO     HTTP Request: HEAD                 _client.py:1025
+                             https://huggingface.co/BAAI/bge-m3                
+                             /resolve/main/tokenizer_config.jso                
+                             n "HTTP/1.1 307 Temporary                         
+                             Redirect"                                         
+                    INFO     HTTP Request: HEAD                 _client.py:1025
+                             https://huggingface.co/api/resolve                
+                             -cache/models/BAAI/bge-m3/5617a9f6                
+                             1b028005a4858fdac845db406aefb181/t                
+                             okenizer_config.json "HTTP/1.1 200                
+                             OK"                                               
+                    INFO     HTTP Request: HEAD                 _client.py:1025
+                             https://huggingface.co/BAAI/bge-m3                
+                             /resolve/main/config.json                         
+                             "HTTP/1.1 307 Temporary Redirect"                 
+                    INFO     HTTP Request: HEAD                 _client.py:1025
+                             https://huggingface.co/api/resolve                
+                             -cache/models/BAAI/bge-m3/5617a9f6                
+                             1b028005a4858fdac845db406aefb181/c                
+                             onfig.json "HTTP/1.1 200 OK"                      
+[06/11/26 20:21:44] INFO     HTTP Request: HEAD                 _client.py:1025
+                             https://huggingface.co/BAAI/bge-m3                
+                             /resolve/main/config.json                         
+                             "HTTP/1.1 307 Temporary Redirect"                 
+                    INFO     HTTP Request: HEAD                 _client.py:1025
+                             https://huggingface.co/api/resolve                
+                             -cache/models/BAAI/bge-m3/5617a9f6                
+                             1b028005a4858fdac845db406aefb181/c                
+                             onfig.json "HTTP/1.1 200 OK"                      
+                    INFO     HTTP Request: HEAD                 _client.py:1025
+                             https://huggingface.co/BAAI/bge-m3                
+                             /resolve/main/tokenizer_config.jso                
+                             n "HTTP/1.1 307 Temporary                         
+                             Redirect"                                         
+                    INFO     HTTP Request: HEAD                 _client.py:1025
+                             https://huggingface.co/api/resolve                
+                             -cache/models/BAAI/bge-m3/5617a9f6                
+                             1b028005a4858fdac845db406aefb181/t                
+                             okenizer_config.json "HTTP/1.1 200                
+                             OK"                                               
+[06/11/26 20:21:45] INFO     HTTP Request: GET                  _client.py:1025
+                             https://huggingface.co/api/models/                
+                             BAAI/bge-m3/tree/main/additional_c                
+                             hat_templates?recursive=false&expa                
+                             nd=false "HTTP/1.1 404 Not Found"                 
+                    INFO     HTTP Request: GET                  _client.py:1025
+                             https://huggingface.co/api/models/                
+                             BAAI/bge-m3/tree/main?recursive=tr                
+                             ue&expand=false "HTTP/1.1 200 OK"                 
+[06/11/26 20:21:48] INFO     HTTP Request: GET                  _client.py:1025
+                             https://huggingface.co/api/models/                
+                             BAAI/bge-m3 "HTTP/1.1 200 OK"                     
+[06/11/26 20:21:49] INFO     HTTP Request: HEAD                 _client.py:1025
+                             https://huggingface.co/BAAI/bge-m3                
+                             /resolve/main/1_Pooling/config.jso                
+                             n "HTTP/1.1 307 Temporary                         
+                             Redirect"                                         
+                    INFO     HTTP Request: HEAD                 _client.py:1025
+                             https://huggingface.co/api/resolve                
+                             -cache/models/BAAI/bge-m3/5617a9f6                
+                             1b028005a4858fdac845db406aefb181/1                
+                             _Pooling%2Fconfig.json "HTTP/1.1                  
+                             200 OK"                                           
+                    INFO     HTTP Request: GET                  _client.py:1025
+                             https://huggingface.co/api/models/                
+                             BAAI/bge-m3 "HTTP/1.1 200 OK"                     
+[cortex-mcp] embedder ready in 14.1s
+[cortex-mcp] retriever ready in 14.7s
+Exception ignored in: <function QdrantClient.__del__ at 0x0000028102F19A80>
+Traceback (most recent call last):
+  File "E:\projects\cortex\.venv\Lib\site-packages\qdrant_client\qdrant_client.py", line 169, in __del__
+  File "E:\projects\cortex\.venv\Lib\site-packages\qdrant_client\qdrant_client.py", line 178, in close
+  File "E:\projects\cortex\.venv\Lib\site-packages\qdrant_client\local\qdrant_local.py", line 85, in close
+ImportError: sys.meta_path is None, Python is likely shutting down

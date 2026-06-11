@@ -1,5 +1,7 @@
 # Cortex — Agentic RAG Knowledge Assistant
 
+[![CI](https://github.com/ALTERLK/cortex/actions/workflows/ci.yml/badge.svg)](https://github.com/ALTERLK/cortex/actions/workflows/ci.yml)
+
 Ask questions over your own documents and get answers **with source citations**.
 Built from scratch — no LangChain, no LlamaIndex: the retrieval pipeline, the
 agentic tool-use loop, the evaluation harness, and the web UI are all hand-written

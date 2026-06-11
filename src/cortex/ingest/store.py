@@ -16,10 +16,8 @@ import hashlib
 import uuid
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
 
 from cortex.ingest.chunker import Chunk
-
 
 COLLECTION_NAME = "cortex"
 
@@ -89,7 +87,7 @@ class VectorStore:
                 vector=emb,
                 payload={"text": c.text, **c.metadata},
             )
-            for c, emb in zip(chunks, embeddings)
+            for c, emb in zip(chunks, embeddings, strict=True)
         ]
         self._client.upsert(collection_name=COLLECTION_NAME, points=points)
 

@@ -11,8 +11,8 @@ from __future__ import annotations
 import json
 import logging
 import time
+from collections.abc import Iterator
 from pathlib import Path
-from typing import Iterator
 
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import StreamingResponse

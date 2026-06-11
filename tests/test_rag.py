@@ -12,7 +12,6 @@ from cortex.llm.base import LLMResponse, TokenUsage
 from cortex.rag.generator import Generator, _build_user_message
 from cortex.rag.retriever import Retriever
 
-
 # ---------------------------------------------------------------------------
 # Fakes
 # ---------------------------------------------------------------------------

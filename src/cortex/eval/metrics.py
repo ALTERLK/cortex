@@ -15,7 +15,6 @@ import re
 from cortex.ingest.store import SearchResult
 from cortex.llm.base import LLMClient
 
-
 # ---------------------------------------------------------------------------
 # Retrieval metrics (pure functions — easy to unit-test)
 # ---------------------------------------------------------------------------

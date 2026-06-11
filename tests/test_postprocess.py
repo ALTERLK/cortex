@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from cortex.llm.postprocess import ThinkingStreamFilter, strip_thinking
 
-
 # ---------------------------------------------------------------------------
 # strip_thinking (complete strings)
 # ---------------------------------------------------------------------------

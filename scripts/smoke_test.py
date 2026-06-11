@@ -17,7 +17,7 @@ def main() -> None:
         llm = get_llm_client()
     except MissingAPIKeyError as exc:
         print(f"[setup needed] {exc}")
-        raise SystemExit(1)
+        raise SystemExit(1) from exc
 
     # --- Test 1: plain chat -------------------------------------------------
     print("=== Test 1: plain chat ===")

@@ -17,7 +17,8 @@ is the whole reason we set LLM_BASE_URL in .env instead of hardcoding it.
 """
 
 import json
-from typing import Any, Iterator
+from collections.abc import Iterator
+from typing import Any
 
 from openai import OpenAI
 

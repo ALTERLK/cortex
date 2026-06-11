@@ -8,12 +8,11 @@ generator works with any provider (Claude, DeepSeek, GPT…).
 
 from __future__ import annotations
 
+from collections.abc import Iterator
 from dataclasses import dataclass, field
-from typing import Iterator
 
 from cortex.ingest.store import SearchResult
 from cortex.llm.base import LLMClient, LLMResponse, TokenUsage
-
 
 _SYSTEM_PROMPT = """\
 You are Cortex, a personal knowledge assistant. You answer questions using ONLY
