@@ -9,9 +9,10 @@ generator works with any provider (Claude, DeepSeek, GPT…).
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from typing import Iterator
 
 from cortex.ingest.store import SearchResult
-from cortex.llm.base import LLMClient, TokenUsage
+from cortex.llm.base import LLMClient, LLMResponse, TokenUsage
 
 
 _SYSTEM_PROMPT = """\
@@ -66,6 +67,33 @@ class Generator:
             answer=response.content or "",
             passages=passages,
             usage=response.usage,
+        )
+
+    def generate_stream(
+        self, question: str, passages: list[SearchResult]
+    ) -> Iterator[str | GeneratorResponse]:
+        """Streaming variant: yield answer deltas, then a final GeneratorResponse.
+
+        Mirrors the chat_stream contract — every item is a `str` delta
+        except the last, which carries the full answer and token usage.
+        """
+        user_content = _build_user_message(question, passages)
+        messages = [
+            {"role": "system", "content": _SYSTEM_PROMPT},
+            {"role": "user", "content": user_content},
+        ]
+
+        final: LLMResponse | None = None
+        for item in self._llm.chat_stream(messages, temperature=0.1):
+            if isinstance(item, LLMResponse):
+                final = item
+            else:
+                yield item
+
+        yield GeneratorResponse(
+            answer=(final.content if final else "") or "",
+            passages=passages,
+            usage=final.usage if final else TokenUsage(0, 0),
         )
 
 

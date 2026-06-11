@@ -35,12 +35,31 @@ class FakeLLMClient:
         self.seen_messages = messages
         return self.canned
 
+    def chat_stream(
+        self,
+        messages: list[dict[str, Any]],
+        *,
+        temperature: float = 0.3,
+    ):
+        self.seen_messages = messages
+        if self.canned.content:
+            yield self.canned.content
+        yield self.canned
+
 
 def test_fake_client_satisfies_protocol() -> None:
     client: LLMClient = FakeLLMClient(LLMResponse(content="hi"))
     response = client.chat([{"role": "user", "content": "hello"}])
     assert response.content == "hi"
     assert not response.wants_tool_call
+
+
+def test_chat_stream_contract() -> None:
+    # Contract: str deltas, then exactly one final LLMResponse.
+    client: LLMClient = FakeLLMClient(LLMResponse(content="hi"))
+    items = list(client.chat_stream([{"role": "user", "content": "x"}]))
+    assert items[:-1] == ["hi"]
+    assert isinstance(items[-1], LLMResponse)
 
 
 def test_response_with_tool_calls() -> None:

@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass, field
+from typing import Iterator
 
 from cortex.agent.tools import TOOL_SCHEMAS, ToolExecutor
 from cortex.llm.base import LLMClient, TokenUsage
@@ -78,6 +79,21 @@ class AgentLoop:
 
     def run(self, question: str) -> AgentResponse:
         """Run the agent loop for *question* and return a cited answer."""
+        for event in self.run_events(question):
+            if isinstance(event, AgentResponse):
+                return event
+        raise RuntimeError("run_events ended without an AgentResponse")  # unreachable
+
+    def run_events(self, question: str) -> Iterator[ToolCallRecord | AgentResponse]:
+        """Run the loop, yielding each tool call as it happens.
+
+        Yields ToolCallRecord items in real time (so callers like the SSE
+        endpoint can show live progress), then exactly one final AgentResponse.
+
+        NOTE (learning): turning the loop into a generator costs nothing —
+        run() above just drains it. This is the standard way to retrofit
+        progress reporting onto a batch algorithm without duplicating it.
+        """
         messages: list[dict] = [
             {"role": "system", "content": _SYSTEM_PROMPT},
             {"role": "user", "content": question},
@@ -92,12 +108,13 @@ class AgentLoop:
 
             if not response.wants_tool_call:
                 # LLM produced a final answer — we're done.
-                return AgentResponse(
+                yield AgentResponse(
                     answer=response.content or "",
                     tool_calls=tool_calls_log,
                     iterations=iteration,
                     usage=TokenUsage(total_input, total_output),
                 )
+                return
 
             # -----------------------------------------------------------------
             # The LLM requested one or more tool calls.
@@ -111,13 +128,13 @@ class AgentLoop:
 
             for tc in response.tool_calls:
                 result_text = self._executor.execute(tc.name, tc.arguments)
-                tool_calls_log.append(
-                    ToolCallRecord(name=tc.name, arguments=tc.arguments, result=result_text)
-                )
+                record = ToolCallRecord(name=tc.name, arguments=tc.arguments, result=result_text)
+                tool_calls_log.append(record)
+                yield record
                 messages.append(_tool_result_message(tc.id, result_text))
 
         # Reached max_iterations without a "stop" response.
-        return AgentResponse(
+        yield AgentResponse(
             answer="[Agent reached the maximum number of iterations without a final answer.]",
             tool_calls=tool_calls_log,
             iterations=self._max_iterations,

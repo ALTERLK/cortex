@@ -17,7 +17,7 @@ is the whole reason we set LLM_BASE_URL in .env instead of hardcoding it.
 """
 
 import json
-from typing import Any
+from typing import Any, Iterator
 
 from openai import OpenAI
 
@@ -77,3 +77,44 @@ class OpenAICompatibleClient:
             finish_reason=choice.finish_reason or "stop",
             usage=usage,
         )
+
+    def chat_stream(
+        self,
+        messages: list[dict[str, Any]],
+        *,
+        temperature: float = 0.3,
+    ) -> Iterator[str | LLMResponse]:
+        # NOTE (learning): stream=True makes the API return Server-Sent
+        # Events; the SDK turns them into an iterator of chunks, each
+        # carrying a small "delta" of the answer. stream_options asks the
+        # provider to append one final chunk with token usage (some
+        # OpenAI-compatible proxies omit it — we fall back to zeros).
+        stream = self._client.chat.completions.create(
+            model=self._model,
+            messages=messages,
+            temperature=temperature,
+            stream=True,
+            stream_options={"include_usage": True},
+        )
+
+        parts: list[str] = []
+        usage = TokenUsage(0, 0)
+        finish = "stop"
+
+        for chunk in stream:
+            if chunk.usage:
+                usage = TokenUsage(
+                    input_tokens=chunk.usage.prompt_tokens,
+                    output_tokens=chunk.usage.completion_tokens,
+                )
+            if not chunk.choices:
+                continue  # the usage-only final chunk has no choices
+            choice = chunk.choices[0]
+            if choice.finish_reason:
+                finish = choice.finish_reason
+            delta = choice.delta.content if choice.delta else None
+            if delta:
+                parts.append(delta)
+                yield delta
+
+        yield LLMResponse(content="".join(parts), finish_reason=finish, usage=usage)

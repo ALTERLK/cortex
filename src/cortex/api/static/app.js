@@ -107,25 +107,38 @@ function renderToolCalls(container, toolCalls) {
   });
 }
 
-function addAssistantMessage(data) {
-  const node = el("tpl-assistant-msg");
-  const sources = data.sources || [];
+/* Parse a Server-Sent-Events byte stream from fetch().
+ *
+ * NOTE (learning): the browser's built-in EventSource only supports GET,
+ * but we need POST with a JSON body — so we read response.body manually.
+ * SSE framing is simple: frames are separated by a blank line; each frame
+ * has "event:" and "data:" lines. We buffer bytes until a complete frame
+ * is available, then dispatch it.
+ */
+async function readSSE(response, handlers) {
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buf = "";
 
-  renderToolCalls(node.querySelector(".tools"), data.tool_calls || []);
-  renderAnswer(node.querySelector(".answer"), data.answer, sources.length);
-  renderSources(node.querySelector(".sources"), sources);
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buf += decoder.decode(value, { stream: true });
 
-  let stats =
-    `${(data.latency_ms / 1000).toFixed(1)}s · ` +
-    `${data.input_tokens}↑ ${data.output_tokens}↓ tokens · ` +
-    `$${data.cost_usd_est.toFixed(5)}`;
-  if (data.mode === "agent") {
-    stats += ` · ${data.iterations} iteration${data.iterations === 1 ? "" : "s"}`;
+    let sep;
+    while ((sep = buf.indexOf("\n\n")) !== -1) {
+      const frame = buf.slice(0, sep);
+      buf = buf.slice(sep + 2);
+
+      let event = "message";
+      let data = "";
+      for (const line of frame.split("\n")) {
+        if (line.startsWith("event: ")) event = line.slice(7);
+        else if (line.startsWith("data: ")) data += line.slice(6);
+      }
+      if (handlers[event]) handlers[event](JSON.parse(data));
+    }
   }
-  node.querySelector(".stats").textContent = stats;
-
-  chat.appendChild(node);
-  scrollToBottom();
 }
 
 // Clicking a [N] chip opens and highlights the matching source card.
@@ -150,8 +163,23 @@ async function ask(question) {
   addUserMessage(question);
   const typing = addTyping();
 
+  // The assistant bubble is created lazily on the first stream event,
+  // replacing the typing indicator the moment real progress arrives.
+  let node = null;
+  let answerEl = null;
+  let answerText = "";
+  let sourceCount = 0;
+
+  function ensureBubble() {
+    if (node) return;
+    typing.remove();
+    node = el("tpl-assistant-msg");
+    answerEl = node.querySelector(".answer");
+    chat.appendChild(node);
+  }
+
   try {
-    const resp = await fetch("/ask", {
+    const resp = await fetch("/ask/stream", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ question, mode }),
@@ -160,7 +188,45 @@ async function ask(question) {
       const detail = await resp.json().catch(() => ({}));
       throw new Error(detail.detail || `Server error (${resp.status})`);
     }
-    addAssistantMessage(await resp.json());
+
+    await readSSE(resp, {
+      sources(data) {
+        ensureBubble();
+        sourceCount = data.length;
+        renderSources(node.querySelector(".sources"), data);
+      },
+      tool(data) {
+        ensureBubble();
+        renderToolCalls(node.querySelector(".tools"), [data]);
+        scrollToBottom();
+      },
+      delta(text) {
+        ensureBubble();
+        answerText += text;
+        answerEl.textContent = answerText;  // plain text while streaming
+        scrollToBottom();
+      },
+      answer(data) {
+        ensureBubble();
+        answerText = data.text;
+      },
+      done(data) {
+        ensureBubble();
+        // Final render: swap plain streamed text for citation chips.
+        answerEl.textContent = "";
+        renderAnswer(answerEl, answerText, sourceCount);
+
+        let stats =
+          `${(data.latency_ms / 1000).toFixed(1)}s · ` +
+          `${data.input_tokens}↑ ${data.output_tokens}↓ tokens · ` +
+          `$${data.cost_usd_est.toFixed(5)}`;
+        if (data.mode === "agent") {
+          stats += ` · ${data.iterations} iteration${data.iterations === 1 ? "" : "s"}`;
+        }
+        node.querySelector(".stats").textContent = stats;
+        scrollToBottom();
+      },
+    });
   } catch (err) {
     showToast(err.message === "Failed to fetch" ? "Cannot reach the server." : err.message);
   } finally {

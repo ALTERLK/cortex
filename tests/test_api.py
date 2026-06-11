@@ -32,29 +32,45 @@ class _FakeRetriever:
 
 
 class _FakeGenerator:
+    _ANSWER = "<thinking>Let me check the passages.</thinking>Test answer [1]."
+
     def generate(self, question: str, passages: list[SearchResult]) -> GeneratorResponse:
         return GeneratorResponse(
             # The <thinking> block must be stripped by the API layer.
-            answer="<thinking>Let me check the passages.</thinking>Test answer [1].",
+            answer=self._ANSWER,
             passages=passages,
             usage=TokenUsage(input_tokens=100, output_tokens=50),
         )
 
+    def generate_stream(self, question: str, passages: list[SearchResult]):
+        # Deltas torn mid-tag to exercise the streaming thinking filter.
+        yield "<thinking>Let me check"
+        yield " the passages.</thi"
+        yield "nking>Test answer"
+        yield " [1]."
+        yield self.generate(question, passages)
+
 
 class _FakeAgent:
+    _RESPONSE = AgentResponse(
+        answer="<thinking>Searching first.</thinking>Agent answer [1].",
+        tool_calls=[
+            ToolCallRecord(
+                name="search_knowledge_base",
+                arguments={"query": "test query"},
+                result="[1] (source: test.md, score: 0.900)\nTest passage.",
+            )
+        ],
+        iterations=2,
+        usage=TokenUsage(input_tokens=300, output_tokens=80),
+    )
+
     def run(self, question: str) -> AgentResponse:
-        return AgentResponse(
-            answer="<thinking>Searching first.</thinking>Agent answer [1].",
-            tool_calls=[
-                ToolCallRecord(
-                    name="search_knowledge_base",
-                    arguments={"query": "test query"},
-                    result="[1] (source: test.md, score: 0.900)\nTest passage.",
-                )
-            ],
-            iterations=2,
-            usage=TokenUsage(input_tokens=300, output_tokens=80),
-        )
+        return self._RESPONSE
+
+    def run_events(self, question: str):
+        yield from self._RESPONSE.tool_calls
+        yield self._RESPONSE
 
 
 class _FakeEmbedder:
@@ -205,6 +221,78 @@ def test_ask_strips_thinking_blocks(client: TestClient) -> None:
     resp = client.post("/ask", json={"question": "Q?"})
     assert resp.json()["answer"] == "Test answer [1]."
     assert "<thinking>" not in resp.json()["answer"]
+
+
+# ---------------------------------------------------------------------------
+# /ask/stream (SSE)
+# ---------------------------------------------------------------------------
+
+
+def parse_sse(text: str) -> list[tuple[str, Any]]:
+    """Parse an SSE body into (event, decoded-json-data) pairs."""
+    events: list[tuple[str, Any]] = []
+    for frame in text.strip().split("\n\n"):
+        event, data = "message", ""
+        for line in frame.split("\n"):
+            if line.startswith("event: "):
+                event = line[len("event: "):]
+            elif line.startswith("data: "):
+                data += line[len("data: "):]
+        events.append((event, json.loads(data)))
+    return events
+
+
+def test_stream_rag_event_sequence(client: TestClient) -> None:
+    resp = client.post("/ask/stream", json={"question": "Q?"})
+    assert resp.status_code == 200
+    assert resp.headers["content-type"].startswith("text/event-stream")
+
+    events = parse_sse(resp.text)
+    types = [e for e, _ in events]
+    assert types[0] == "sources"
+    assert types[-1] == "done"
+    assert "delta" in types
+
+
+def test_stream_rag_deltas_filter_thinking(client: TestClient) -> None:
+    # The fake generator tears the <thinking> tags across chunks; the
+    # reassembled visible text must contain none of it.
+    events = parse_sse(client.post("/ask/stream", json={"question": "Q?"}).text)
+    answer = "".join(d for e, d in events if e == "delta")
+    assert answer == "Test answer [1]."
+
+
+def test_stream_rag_sources_payload(client: TestClient) -> None:
+    events = parse_sse(client.post("/ask/stream", json={"question": "Q?"}).text)
+    sources = next(d for e, d in events if e == "sources")
+    assert sources[0]["source"] == "test.md"
+    assert sources[0]["text"] == "Test passage."
+
+
+def test_stream_agent_event_sequence(client: TestClient) -> None:
+    resp = client.post("/ask/stream", json={"question": "Q?", "mode": "agent"})
+    events = parse_sse(resp.text)
+    assert [e for e, _ in events] == ["tool", "answer", "done"]
+
+    tool = events[0][1]
+    assert tool["name"] == "search_knowledge_base"
+    assert tool["arguments"] == {"query": "test query"}
+
+    answer = events[1][1]
+    assert answer["text"] == "Agent answer [1]."  # thinking stripped
+
+    done = events[2][1]
+    assert done["mode"] == "agent"
+    assert done["iterations"] == 2
+
+
+def test_stream_done_carries_stats(client: TestClient) -> None:
+    events = parse_sse(client.post("/ask/stream", json={"question": "Q?"}).text)
+    done = events[-1][1]
+    assert done["input_tokens"] == 100
+    assert done["output_tokens"] == 50
+    assert done["latency_ms"] >= 0
+    assert done["cost_usd_est"] >= 0
 
 
 # ---------------------------------------------------------------------------

@@ -20,7 +20,7 @@ NOTE (learning): this is the "ports and adapters" (hexagonal) pattern —
 """
 
 from dataclasses import dataclass, field
-from typing import Any, Protocol
+from typing import Any, Iterator, Protocol
 
 
 @dataclass(frozen=True)
@@ -83,5 +83,24 @@ class LLMClient(Protocol):
                  {"role": "user", "content": "..."}]
             tools: optional JSON-schema tool definitions (OpenAI format).
             temperature: sampling randomness; low = more deterministic.
+        """
+        ...
+
+    def chat_stream(
+        self,
+        messages: list[dict[str, Any]],
+        *,
+        temperature: float = 0.3,
+    ) -> Iterator[str | LLMResponse]:
+        """Stream a chat completion: yield text deltas, then one LLMResponse.
+
+        Contract: every yielded item is a `str` delta except the LAST one,
+        which is the complete normalized `LLMResponse` (full content + usage).
+        Callers display the deltas and read usage from the final item.
+
+        NOTE (learning): no `tools` parameter on purpose — streaming
+        tool-call fragments is a protocol rabbit hole. The agent loop uses
+        non-streaming chat() for its iterations; streaming is for final
+        answer generation only.
         """
         ...
