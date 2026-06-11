@@ -11,3 +11,5 @@ data/qdrant/
 .vscode/
 .idea/
 .DS_Store
+.claude/
+data/*.log
