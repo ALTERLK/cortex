@@ -56,3 +56,16 @@ each entry should be explainable in ~30 seconds with a trade-off.
   no duplicates accumulate across runs.
 - **`query_points()` over deprecated `search()`.** qdrant-client ≥1.7 renamed the
   search method; noted in code for future SDK upgrades.
+
+## 2026-06-11 · M3
+
+- **Context and question in one user message.** Putting numbered passages and the
+  question in the same message (rather than system+user split) improves citation
+  adherence — most models follow inline instructions more reliably than system-level
+  ones when the task is referencing specific numbered items.
+- **Temperature=0.1 for generation.** Factual grounded answers benefit from low
+  temperature; creativity is not a goal here. Retrieval already provides the
+  relevant information.
+- **Generator returns passages alongside the answer.** The CLI and future API
+  layers can display source provenance without re-querying the store — one round
+  trip does both retrieval and generation context.
