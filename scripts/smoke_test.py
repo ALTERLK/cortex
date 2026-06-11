@@ -2,15 +2,14 @@
 
 Run with:  uv run python scripts/smoke_test.py
 
-It performs two live calls against DeepSeek:
+It performs two live calls:
   1. a plain chat completion,
   2. a function-calling round (the model asks us to run a tool).
 
-Requires DEEPSEEK_API_KEY in your .env — see .env.example.
+Requires LLM_API_KEY, LLM_BASE_URL, and LLM_MODEL in your .env — see .env.example.
 """
 
-from cortex.llm import get_llm_client
-from cortex.llm.deepseek import MissingAPIKeyError
+from cortex.llm import MissingAPIKeyError, get_llm_client
 
 
 def main() -> None:

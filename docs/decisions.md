@@ -22,3 +22,7 @@ each entry should be explainable in ~30 seconds with a trade-off.
   src layout prevents accidental imports of uninstalled code.
 - **Secrets via pydantic-settings + .env (git-ignored).** Single `get_settings()`
   entry point; `.env.example` documents required variables without values.
+- **Renamed adapter to `OpenAICompatibleClient` / `LLM_API_KEY`.** Switched live
+  provider from DeepSeek direct to Claude via 4SAPI (OpenAI-compatible proxy).
+  Proved the abstraction works: zero call-site changes outside `config.py` and the
+  adapter file itself.

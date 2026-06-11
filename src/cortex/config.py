@@ -20,9 +20,10 @@ class Settings(BaseSettings):
     """Runtime settings, populated from environment variables / .env."""
 
     # --- LLM provider ---
-    # DeepSeek exposes an OpenAI-compatible API, so we talk to it with the
-    # `openai` SDK pointed at a different base_url.
-    deepseek_api_key: str = ""
+    # Any OpenAI-compatible provider (DeepSeek, Claude via 4SAPI, OpenRouter…).
+    # Set LLM_BASE_URL and LLM_MODEL in .env to switch providers without
+    # touching code — that is the point of the abstraction layer.
+    llm_api_key: str = ""
     llm_base_url: str = "https://api.deepseek.com"
     llm_model: str = "deepseek-chat"
 

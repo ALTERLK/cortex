@@ -2,7 +2,7 @@
 
 NOTE (learning): none of these tests touch the network. We test *our*
 logic (the interface contract, config loading, error handling), not
-DeepSeek's servers. Live connectivity is covered by scripts/smoke_test.py.
+the LLM provider's servers. Live connectivity is covered by scripts/smoke_test.py.
 """
 
 from typing import Any
@@ -11,7 +11,7 @@ import pytest
 
 from cortex.config import Settings
 from cortex.llm.base import LLMClient, LLMResponse, TokenUsage, ToolCall
-from cortex.llm.deepseek import DeepSeekClient, MissingAPIKeyError
+from cortex.llm.openai_compat import MissingAPIKeyError, OpenAICompatibleClient
 
 
 class FakeLLMClient:
@@ -57,9 +57,9 @@ def test_token_usage_total() -> None:
     assert TokenUsage(input_tokens=10, output_tokens=5).total_tokens == 15
 
 
-def test_deepseek_client_requires_api_key() -> None:
+def test_client_requires_api_key() -> None:
     with pytest.raises(MissingAPIKeyError):
-        DeepSeekClient(api_key="", base_url="https://api.deepseek.com", model="deepseek-chat")
+        OpenAICompatibleClient(api_key="", base_url="https://api.deepseek.com", model="deepseek-chat")
 
 
 def test_settings_have_sane_defaults(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -67,4 +67,4 @@ def test_settings_have_sane_defaults(monkeypatch: pytest.MonkeyPatch) -> None:
     settings = Settings(_env_file=None)
     assert settings.llm_base_url == "https://api.deepseek.com"
     assert settings.llm_model == "deepseek-chat"
-    assert settings.deepseek_api_key == ""
+    assert settings.llm_api_key == ""

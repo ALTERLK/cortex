@@ -9,14 +9,15 @@ so the rest of the codebase stays provider-agnostic.
 
 from cortex.config import get_settings
 from cortex.llm.base import LLMClient, LLMResponse, TokenUsage, ToolCall
-from cortex.llm.deepseek import DeepSeekClient
+from cortex.llm.openai_compat import MissingAPIKeyError, OpenAICompatibleClient
 
 __all__ = [
     "LLMClient",
     "LLMResponse",
     "TokenUsage",
     "ToolCall",
-    "DeepSeekClient",
+    "OpenAICompatibleClient",
+    "MissingAPIKeyError",
     "get_llm_client",
 ]
 
@@ -24,13 +25,13 @@ __all__ = [
 def get_llm_client() -> LLMClient:
     """Build the configured LLM client.
 
-    This factory is the single switch point for providers: when we add a
-    second provider (e.g. Claude or GPT), only this function and a config
-    value change — no call site anywhere else is touched.
+    This factory is the single switch point for providers: changing
+    LLM_BASE_URL and LLM_MODEL in .env is all that is needed to move
+    from DeepSeek to Claude to GPT — no call site elsewhere is touched.
     """
     settings = get_settings()
-    return DeepSeekClient(
-        api_key=settings.deepseek_api_key,
+    return OpenAICompatibleClient(
+        api_key=settings.llm_api_key,
         base_url=settings.llm_base_url,
         model=settings.llm_model,
     )

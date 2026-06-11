@@ -1,12 +1,19 @@
-"""DeepSeek adapter for the LLMClient protocol.
+"""Adapter for any OpenAI-compatible LLM endpoint.
 
-DeepSeek's API is OpenAI-compatible, so we reuse the official `openai`
-SDK and only change `base_url`. This adapter's whole job is:
+Works with DeepSeek, Claude via 4SAPI, OpenRouter, or any provider
+that exposes an OpenAI-compatible chat completions API. This adapter's
+whole job is:
 
 1. authenticate and send the request,
 2. map the provider's response object into our `LLMResponse`.
 
 Nothing outside this file should import the `openai` SDK.
+
+NOTE (learning): "OpenAI-compatible" means the provider copied OpenAI's
+HTTP API contract (same endpoints, same JSON shapes). The `openai` Python
+SDK lets you point it at a different server with just `base_url=...` — so
+the exact same code works for DeepSeek, Claude via 4SAPI, or GPT. That
+is the whole reason we set LLM_BASE_URL in .env instead of hardcoding it.
 """
 
 import json
@@ -21,12 +28,11 @@ class MissingAPIKeyError(RuntimeError):
     """Raised when a live LLM call is attempted without an API key."""
 
 
-class DeepSeekClient:
+class OpenAICompatibleClient:
     def __init__(self, api_key: str, base_url: str, model: str) -> None:
         if not api_key:
             raise MissingAPIKeyError(
-                "DEEPSEEK_API_KEY is not set. Copy .env.example to .env and "
-                "fill in your key from https://platform.deepseek.com/api_keys"
+                "LLM_API_KEY is not set. Copy .env.example to .env and fill in your key."
             )
         self._client = OpenAI(api_key=api_key, base_url=base_url)
         self._model = model
