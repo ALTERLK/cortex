@@ -86,6 +86,25 @@ each entry should be explainable in ~30 seconds with a trade-off.
   (claude-haiku-4-5-20251001-thinking) emits reasoning in `<thinking>` tags;
   stripping them keeps the displayed answer clean without losing the actual reply.
 
+## 2026-06-11 · M7
+
+- **Hand-written HTML/CSS/JS over Streamlit (and over React).** The owner asked for
+  an iOS-style liquid-glass aesthetic; Streamlit's closed component structure can't
+  deliver it, and React would add a Node toolchain plus a new knowledge domain to a
+  backend-focused project. Three static files served by FastAPI need no build step
+  and keep every line explainable.
+- **Performance budget for glass effects.** `backdrop-filter` (real-time blur) is
+  restricted to three fixed panels (navbar, composer, source cards); scrolling chat
+  bubbles use pre-mixed rgba colors that look like glass but cost nothing. All
+  animations touch only `transform`/`opacity` (GPU compositor properties), the
+  ambient background is a `position:fixed` layer composited once, and
+  `prefers-reduced-motion` disables the drift animations.
+- **XSS-safe rendering without a framework.** All user/LLM text enters the DOM via
+  `textContent`, never `innerHTML`. Citation markers `[N]` are parsed with a regex
+  split so the only constructed elements are chips containing a validated integer.
+- **`SourceRef` gained a `text` field.** The expandable citation cards need the
+  passage text; returning it in `/ask` avoids a second round trip per citation.
+
 ## 2026-06-11 · M6
 
 - **FastAPI with lifespan for component initialization.** The embedding model and

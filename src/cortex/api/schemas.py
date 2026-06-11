@@ -14,6 +14,7 @@ class SourceRef(BaseModel):
     source: str
     chunk_index: int
     score: float
+    text: str
 
 
 class AskResponse(BaseModel):

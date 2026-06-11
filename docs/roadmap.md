@@ -15,7 +15,7 @@ self-test → hands-on exercise → commit + decision log entry.
 | M4 | Agent layer (hand-written tool-use loop; LLM decides when/what to retrieve) | ✅ done | multi-step questions trigger ≥2 retrievals; max-iteration guard tested |
 | M5 | Evaluation harness — **the differentiator** (30–50 Q eval set; hit-rate@k, MRR; LLM-as-judge) | ✅ done | `eval` command outputs a scored report; baseline numbers recorded here |
 | M6 | FastAPI service + observability + deployment (SSE streaming; latency/token/cost logs; Docker) | ✅ done | `uv run pytest` 75 green; server runs via `scripts/serve.py`; logs show per-request cost |
-| M7 | Minimal frontend (Streamlit chat with expandable citations) | ⬜ | demo-able in browser |
+| M7 | Liquid-glass web frontend (hand-written HTML/CSS/JS chat UI with clickable citations, served by FastAPI) | ✅ done | demo-able at `/`; citations expand to source passages; 79 tests green |
 
 ## Phase 2 — from "works" to "advanced" (order matters)
 

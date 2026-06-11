@@ -64,7 +64,7 @@ def ask(body: AskRequest, request: Request) -> AskResponse:
     return AskResponse(
         answer=result.answer,
         sources=[
-            SourceRef(source=p.source, chunk_index=p.chunk_index, score=round(p.score, 4))
+            SourceRef(source=p.source, chunk_index=p.chunk_index, score=round(p.score, 4), text=p.text)
             for p in passages
         ],
         latency_ms=latency_ms,

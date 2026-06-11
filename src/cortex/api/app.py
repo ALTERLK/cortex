@@ -12,9 +12,12 @@ import json
 import logging
 import time
 from contextlib import asynccontextmanager
+from pathlib import Path
 from typing import AsyncIterator
 
 from fastapi import FastAPI, Request, Response
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 
 from cortex.ingest.embedder import Embedder
 from cortex.ingest.store import VectorStore
@@ -54,6 +57,16 @@ def create_app() -> FastAPI:
 
     from cortex.api.routes import router
     app.include_router(router)
+
+    # NOTE (learning): the frontend is plain HTML/CSS/JS served straight from
+    # this package — no Node.js build step. `__file__`-relative paths work the
+    # same whether the app runs from a checkout, a wheel, or a container.
+    static_dir = Path(__file__).parent / "static"
+    app.mount("/static", StaticFiles(directory=static_dir), name="static")
+
+    @app.get("/", include_in_schema=False)
+    def index() -> FileResponse:
+        return FileResponse(static_dir / "index.html")
 
     # NOTE (learning): middleware runs around every request, so it's the right
     # place for cross-cutting concerns like access logging. The actual business

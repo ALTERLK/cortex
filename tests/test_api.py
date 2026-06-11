@@ -111,6 +111,11 @@ def test_ask_returns_answer(client: TestClient) -> None:
     assert data["sources"][0]["chunk_index"] == 0
 
 
+def test_ask_sources_include_passage_text(client: TestClient) -> None:
+    resp = client.post("/ask", json={"question": "Q?"})
+    assert resp.json()["sources"][0]["text"] == "Test passage."
+
+
 def test_ask_token_counts(client: TestClient) -> None:
     resp = client.post("/ask", json={"question": "Q?"})
     data = resp.json()
@@ -162,3 +167,27 @@ def test_ingest_response_has_required_fields(client: TestClient, tmp_path) -> No
     resp = client.post("/ingest", json={"directory": str(tmp_path)})
     assert resp.status_code == 200
     assert set(resp.json().keys()) == {"chunks_stored", "latency_ms"}
+
+
+# ---------------------------------------------------------------------------
+# Frontend (static files)
+# ---------------------------------------------------------------------------
+
+
+def test_index_serves_html(client: TestClient) -> None:
+    resp = client.get("/")
+    assert resp.status_code == 200
+    assert resp.headers["content-type"].startswith("text/html")
+    assert "Cortex" in resp.text
+
+
+def test_static_css_served(client: TestClient) -> None:
+    resp = client.get("/static/styles.css")
+    assert resp.status_code == 200
+    assert "backdrop-filter" in resp.text
+
+
+def test_static_js_served(client: TestClient) -> None:
+    resp = client.get("/static/app.js")
+    assert resp.status_code == 200
+    assert "fetch" in resp.text
