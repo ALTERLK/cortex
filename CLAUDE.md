@@ -7,12 +7,17 @@ Agentic RAG knowledge assistant: ask questions over your own documents, get answ
 ```sh
 uv sync                                # install/update dependencies
 uv run pytest                          # run unit tests (no network, no API key needed)
-uv run python scripts/smoke_test.py    # live LLM smoke test (needs DEEPSEEK_API_KEY in .env)
+uv run python scripts/ingest.py        # ingest docs/ into the local Qdrant index
+uv run python scripts/serve.py         # start the FastAPI server + web UI (localhost:8000)
+uv run python scripts/run_eval.py      # run the evaluation harness (needs LLM_API_KEY)
+uv run python scripts/smoke_test.py    # live LLM smoke test (needs LLM_API_KEY in .env)
 ```
 
 ## Setup
 
-Copy `.env.example` to `.env` and set `DEEPSEEK_API_KEY`. Never commit `.env`.
+Copy `.env.example` to `.env` and set `LLM_API_KEY` (plus `LLM_BASE_URL`/`LLM_MODEL`
+for your provider). Never commit `.env`. On Windows set `HF_HOME` to a roomy drive
+before first ingest — BGE-M3 is a 2.3 GB download.
 
 ## Architecture rules
 
@@ -36,4 +41,6 @@ Copy `.env.example` to `.env` and set `DEEPSEEK_API_KEY`. Never commit `.env`.
 
 ## Roadmap
 
-See `docs/roadmap.md`. Current milestone: **M0** (project skeleton + LLM abstraction).
+See `docs/roadmap.md`. **Phase 1 (M0–M7) is complete**: ingest → RAG with citations →
+hand-written agent loop → eval harness (baseline: hit-rate@5 85%, MRR 0.758) →
+FastAPI service → liquid-glass web UI. Next: Phase 2 (adaptive retrieval first).
