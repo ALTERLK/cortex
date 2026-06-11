@@ -86,6 +86,26 @@ each entry should be explainable in ~30 seconds with a trade-off.
   (claude-haiku-4-5-20251001-thinking) emits reasoning in `<thinking>` tags;
   stripping them keeps the displayed answer clean without losing the actual reply.
 
+## 2026-06-11 · M6
+
+- **FastAPI with lifespan for component initialization.** The embedding model and
+  Qdrant store are loaded once at startup via `@asynccontextmanager async def lifespan`.
+  Requests reuse the already-loaded objects — no 2-second BGE-M3 load per request.
+- **app.state over Depends() for heavy singletons.** The retriever, generator, store,
+  and embedder live on `app.state`, injected via `request.app.state` in route handlers.
+  For unit tests, `app.router.lifespan_context` is replaced with a fake that injects
+  stub objects — no real models load, tests run in milliseconds.
+- **Structured JSON logging in middleware.** Every HTTP request produces one JSON log
+  line with method, path, status, and latency_ms. The `/ask` handler adds a second
+  log line with token counts and cost estimate — separating transport observability
+  (middleware) from business observability (handler) keeps each layer focused.
+- **Cost estimate at the handler, not the middleware.** Only the `/ask` handler knows
+  the token counts returned by the LLM, so cost logging belongs there, not in
+  cross-cutting middleware.
+- **Dockerfile pre-bakes BGE-M3 into the image.** `RUN uv run python -c "SentenceTransformer(...)"` 
+  during build means the container starts instantly rather than downloading 2.3 GB at
+  runtime. Trade-off: larger image (~3 GB) vs. fast, predictable startup.
+
 ## 2026-06-11 · M5
 
 - **LLM-as-judge uses the same model as the generator.** In production you

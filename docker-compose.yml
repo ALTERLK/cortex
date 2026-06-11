@@ -1,0 +1,12 @@
+services:
+  app:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      # Persist the Qdrant index across container restarts
+      - ./data/qdrant:/app/data/qdrant
+      # Mount docs so you can ingest without rebuilding the image
+      - ./docs:/app/docs
+    env_file: .env
+    restart: unless-stopped

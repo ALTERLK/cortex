@@ -10,6 +10,8 @@ dependencies = [
     "pypdf>=4.0",
     "sentence-transformers>=3.0",
     "qdrant-client>=1.9",
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.32",
 ]
 
 [dependency-groups]

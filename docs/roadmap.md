@@ -14,7 +14,7 @@ self-test → hands-on exercise → commit + decision log entry.
 | M3 | Retrieval + cited generation — **first usable RAG** | ✅ done | CLI Q&A answers with [1][2] citations grounded in sources |
 | M4 | Agent layer (hand-written tool-use loop; LLM decides when/what to retrieve) | ✅ done | multi-step questions trigger ≥2 retrievals; max-iteration guard tested |
 | M5 | Evaluation harness — **the differentiator** (30–50 Q eval set; hit-rate@k, MRR; LLM-as-judge) | ✅ done | `eval` command outputs a scored report; baseline numbers recorded here |
-| M6 | FastAPI service + observability + deployment (SSE streaming; latency/token/cost logs; Docker) | ⬜ | public URL answers via `curl`; logs show per-request cost |
+| M6 | FastAPI service + observability + deployment (SSE streaming; latency/token/cost logs; Docker) | ✅ done | `uv run pytest` 75 green; server runs via `scripts/serve.py`; logs show per-request cost |
 | M7 | Minimal frontend (Streamlit chat with expandable citations) | ⬜ | demo-able in browser |
 
 ## Phase 2 — from "works" to "advanced" (order matters)
