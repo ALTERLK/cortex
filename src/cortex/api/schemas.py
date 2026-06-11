@@ -7,12 +7,25 @@ from typing import Any, Literal
 from pydantic import BaseModel, Field
 
 
+class ChatTurn(BaseModel):
+    """One prior turn of the conversation, supplied by the client.
+
+    The server is stateless: the browser owns the conversation and sends
+    it back with every request. No sessions, no sticky routing, trivially
+    scalable — the standard pattern for chat APIs.
+    """
+
+    role: Literal["user", "assistant"]
+    content: str
+
+
 class AskRequest(BaseModel):
     question: str
     top_k: int = Field(default=5, ge=1, le=20)
     # "rag" = always retrieve once, then answer (fast, cheap).
     # "agent" = the LLM decides when and how many times to search (M4 loop).
     mode: Literal["rag", "agent"] = "rag"
+    history: list[ChatTurn] = []
 
 
 class SourceRef(BaseModel):

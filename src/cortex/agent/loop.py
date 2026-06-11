@@ -77,14 +77,16 @@ class AgentLoop:
         self._executor = executor
         self._max_iterations = max_iterations
 
-    def run(self, question: str) -> AgentResponse:
+    def run(self, question: str, history: list[dict] | None = None) -> AgentResponse:
         """Run the agent loop for *question* and return a cited answer."""
-        for event in self.run_events(question):
+        for event in self.run_events(question, history):
             if isinstance(event, AgentResponse):
                 return event
         raise RuntimeError("run_events ended without an AgentResponse")  # unreachable
 
-    def run_events(self, question: str) -> Iterator[ToolCallRecord | AgentResponse]:
+    def run_events(
+        self, question: str, history: list[dict] | None = None
+    ) -> Iterator[ToolCallRecord | AgentResponse]:
         """Run the loop, yielding each tool call as it happens.
 
         Yields ToolCallRecord items in real time (so callers like the SSE
@@ -93,9 +95,15 @@ class AgentLoop:
         NOTE (learning): turning the loop into a generator costs nothing —
         run() above just drains it. This is the standard way to retrofit
         progress reporting onto a batch algorithm without duplicating it.
+
+        With *history*, the LLM sees prior turns — so when it writes its own
+        search queries it can resolve references like "when was IT added?"
+        by itself. The plain rag mode cannot do that (its retrieval query is
+        the raw question); this asymmetry is a Phase 2 (query rewriting) topic.
         """
         messages: list[dict] = [
             {"role": "system", "content": _SYSTEM_PROMPT},
+            *(history or []),
             {"role": "user", "content": question},
         ]
         tool_calls_log: list[ToolCallRecord] = []

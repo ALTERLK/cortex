@@ -49,18 +49,19 @@ class Generator:
     def __init__(self, llm: LLMClient) -> None:
         self._llm = llm
 
-    def generate(self, question: str, passages: list[SearchResult]) -> GeneratorResponse:
+    def generate(
+        self,
+        question: str,
+        passages: list[SearchResult],
+        history: list[dict] | None = None,
+    ) -> GeneratorResponse:
         """Call the LLM with the question and passages; return a cited answer.
 
         If no passages are provided the LLM is still called — it will invoke
         the fallback phrase from the system prompt rather than hallucinating.
         """
-        user_content = _build_user_message(question, passages)
         response = self._llm.chat(
-            [
-                {"role": "system", "content": _SYSTEM_PROMPT},
-                {"role": "user", "content": user_content},
-            ],
+            self._build_messages(question, passages, history),
             temperature=0.1,  # low temp for factual, grounded answers
         )
         return GeneratorResponse(
@@ -70,21 +71,20 @@ class Generator:
         )
 
     def generate_stream(
-        self, question: str, passages: list[SearchResult]
+        self,
+        question: str,
+        passages: list[SearchResult],
+        history: list[dict] | None = None,
     ) -> Iterator[str | GeneratorResponse]:
         """Streaming variant: yield answer deltas, then a final GeneratorResponse.
 
         Mirrors the chat_stream contract — every item is a `str` delta
         except the last, which carries the full answer and token usage.
         """
-        user_content = _build_user_message(question, passages)
-        messages = [
-            {"role": "system", "content": _SYSTEM_PROMPT},
-            {"role": "user", "content": user_content},
-        ]
-
         final: LLMResponse | None = None
-        for item in self._llm.chat_stream(messages, temperature=0.1):
+        for item in self._llm.chat_stream(
+            self._build_messages(question, passages, history), temperature=0.1
+        ):
             if isinstance(item, LLMResponse):
                 final = item
             else:
@@ -95,6 +95,26 @@ class Generator:
             passages=passages,
             usage=final.usage if final else TokenUsage(0, 0),
         )
+
+    def _build_messages(
+        self,
+        question: str,
+        passages: list[SearchResult],
+        history: list[dict] | None,
+    ) -> list[dict]:
+        """Assemble the chat: system, then prior turns, then this question.
+
+        NOTE (learning): history goes BETWEEN the system prompt and the new
+        user message, exactly as the conversation actually happened. Prior
+        turns carry only plain text (no old context passages) — re-sending
+        stale passages would waste tokens and could anchor the model on
+        outdated retrievals.
+        """
+        return [
+            {"role": "system", "content": _SYSTEM_PROMPT},
+            *(history or []),
+            {"role": "user", "content": _build_user_message(question, passages)},
+        ]
 
 
 # ---------------------------------------------------------------------------

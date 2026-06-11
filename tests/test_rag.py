@@ -142,3 +142,22 @@ def test_generator_records_token_usage() -> None:
 def test_generator_handles_empty_passages() -> None:
     result = Generator(FakeLLM("No context answer.")).generate("Q?", [])
     assert result.answer == "No context answer."
+
+
+def test_generator_inserts_history_between_system_and_question() -> None:
+    llm = FakeLLM()
+    history = [
+        {"role": "user", "content": "Earlier question?"},
+        {"role": "assistant", "content": "Earlier answer."},
+    ]
+    Generator(llm).generate("Follow-up?", [make_result()], history)
+    roles = [m["role"] for m in llm.seen_messages]
+    assert roles == ["system", "user", "assistant", "user"]
+    assert llm.seen_messages[1]["content"] == "Earlier question?"
+    assert "Follow-up?" in llm.seen_messages[-1]["content"]
+
+
+def test_generator_without_history_unchanged() -> None:
+    llm = FakeLLM()
+    Generator(llm).generate("Q?", [make_result()])
+    assert [m["role"] for m in llm.seen_messages] == ["system", "user"]

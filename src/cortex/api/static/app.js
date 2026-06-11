@@ -19,6 +19,12 @@ const toast = document.getElementById("toast");
 // "rag" = retrieve once then answer; "agent" = M4 tool-use loop.
 let mode = "rag";
 
+// The browser owns the conversation: prior turns are sent with every
+// request and the server stays stateless. Only the last few turns go
+// over the wire (the server also enforces its own cap).
+const history = [];
+const HISTORY_SENT = 12;
+
 document.querySelectorAll(".mode-btn").forEach((btn) => {
   btn.addEventListener("click", () => {
     mode = btn.dataset.mode;
@@ -182,7 +188,7 @@ async function ask(question) {
     const resp = await fetch("/ask/stream", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ question, mode }),
+      body: JSON.stringify({ question, mode, history: history.slice(-HISTORY_SENT) }),
     });
     if (!resp.ok) {
       const detail = await resp.json().catch(() => ({}));
@@ -225,6 +231,10 @@ async function ask(question) {
         }
         node.querySelector(".stats").textContent = stats;
         scrollToBottom();
+
+        // Commit the completed turn to the conversation history.
+        history.push({ role: "user", content: question });
+        history.push({ role: "assistant", content: answerText });
       },
     });
   } catch (err) {
