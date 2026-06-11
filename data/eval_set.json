@@ -1,0 +1,102 @@
+[
+  {
+    "question": "What problem does RAG solve compared to using an LLM alone?",
+    "expected_answer": "RAG prevents hallucination by grounding the LLM in retrieved source passages instead of relying solely on knowledge baked into model weights during training.",
+    "expected_sources": ["sample.md"]
+  },
+  {
+    "question": "What are the six stages of a minimal RAG pipeline?",
+    "expected_answer": "Loading, chunking, embedding, indexing, retrieval, and generation.",
+    "expected_sources": ["sample.md"]
+  },
+  {
+    "question": "What is the purpose of overlap in chunking?",
+    "expected_answer": "Overlap carries the tail of one chunk into the head of the next, ensuring complete sentences are preserved in at least one chunk even if they straddle a boundary.",
+    "expected_sources": ["sample.md"]
+  },
+  {
+    "question": "What does hit-rate@k measure in RAG evaluation?",
+    "expected_answer": "Whether any of the top-k retrieved chunks come from the expected source document for a given question.",
+    "expected_sources": ["sample.md"]
+  },
+  {
+    "question": "What is LLM-as-judge in the context of RAG evaluation?",
+    "expected_answer": "An LLM that scores generated answers for correctness and citation faithfulness on a held-out question set.",
+    "expected_sources": ["sample.md"]
+  },
+  {
+    "question": "What approximate nearest-neighbor index algorithm does Qdrant use?",
+    "expected_answer": "HNSW (Hierarchical Navigable Small World).",
+    "expected_sources": ["sample.md"]
+  },
+  {
+    "question": "What is recursive character splitting and how does it work?",
+    "expected_answer": "A chunking strategy that tries separators in priority order — paragraph breaks, then line breaks, then spaces, then individual characters — falling back to finer splits only when necessary.",
+    "expected_sources": ["sample.md"]
+  },
+  {
+    "question": "Why is the evaluation loop described as the most important engineering asset in a RAG system?",
+    "expected_answer": "Without it, changes to chunk size, embedding model, or retrieval depth are guesswork. With it, every parameter becomes a measurable experiment.",
+    "expected_sources": ["sample.md"]
+  },
+  {
+    "question": "How does chunk size affect retrieval precision and context quality?",
+    "expected_answer": "Smaller chunks improve retrieval precision but lose surrounding context; larger chunks preserve context but dilute the relevance signal. Chunk size is a hyperparameter tuned against an evaluation set.",
+    "expected_sources": ["sample.md"]
+  },
+  {
+    "question": "What is MRR (Mean Reciprocal Rank) and what does it measure?",
+    "expected_answer": "MRR is the mean of 1/rank-of-first-relevant-chunk across all questions. It measures how early the relevant chunk appears in the retrieved results.",
+    "expected_sources": ["sample.md"]
+  },
+  {
+    "question": "Why was LangChain not used in Phase 1 of Cortex?",
+    "expected_answer": "The agent loop, retrieval, and prompting are hand-written so every design is explainable in depth. LangGraph enters in Phase 2 where orchestration genuinely needs a framework.",
+    "expected_sources": ["decisions.md"]
+  },
+  {
+    "question": "Why was Python Protocol chosen over ABC for the LLM interface?",
+    "expected_answer": "Structural typing means tests can use a plain fake class with no inheritance; production adapters stay decoupled.",
+    "expected_sources": ["decisions.md"]
+  },
+  {
+    "question": "What is the benefit of idempotent upserts in the Cortex vector store?",
+    "expected_answer": "Re-ingesting the same file updates existing vectors instead of creating duplicates, because each chunk ID is a deterministic UUID derived from its source filename and chunk index.",
+    "expected_sources": ["decisions.md"]
+  },
+  {
+    "question": "What does the max-iterations guard protect against in the agent loop?",
+    "expected_answer": "A hallucinating or confused LLM calling tools forever. It is the minimum viable safety mechanism for the agentic loop.",
+    "expected_sources": ["decisions.md"]
+  },
+  {
+    "question": "Why is temperature set low for the RAG generator?",
+    "expected_answer": "Factual grounded answers benefit from low temperature; creativity is not a goal when the task is summarising retrieved passages.",
+    "expected_sources": ["decisions.md"]
+  },
+  {
+    "question": "What is the acceptance criterion for milestone M5?",
+    "expected_answer": "The eval command outputs a scored report and baseline numbers are recorded.",
+    "expected_sources": ["roadmap.md"]
+  },
+  {
+    "question": "What Phase 2 direction in the Cortex roadmap introduces LangGraph?",
+    "expected_answer": "P2-C: multi-agent orchestration with router, retrieval, and synthesis agents using LangGraph.",
+    "expected_sources": ["roadmap.md"]
+  },
+  {
+    "question": "What does P2-A (adaptive retrieval) include in the Cortex roadmap?",
+    "expected_answer": "Query rewriting, hybrid search (dense + sparse), bge-reranker reranking, and LLM-made retrieval plans.",
+    "expected_sources": ["roadmap.md"]
+  },
+  {
+    "question": "What embedding model does Cortex use and why was it chosen?",
+    "expected_answer": "BGE-M3, because it is multilingual (Chinese and English), runs locally with no API cost, and produces 1024-dimensional vectors.",
+    "expected_sources": ["decisions.md"]
+  },
+  {
+    "question": "What format does the Cortex generator use to cite sources in its answers?",
+    "expected_answer": "Numbered inline citations in square brackets, such as [1] or [2][3], referencing the numbered context passages provided in the prompt.",
+    "expected_sources": ["decisions.md"]
+  }
+]

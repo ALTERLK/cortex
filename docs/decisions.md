@@ -85,3 +85,15 @@ each entry should be explainable in ~30 seconds with a trade-off.
 - **`<thinking>` blocks stripped in the CLI.** The extended-thinking model
   (claude-haiku-4-5-20251001-thinking) emits reasoning in `<thinking>` tags;
   stripping them keeps the displayed answer clean without losing the actual reply.
+
+## 2026-06-11 · M5
+
+- **LLM-as-judge uses the same model as the generator.** In production you
+  would separate them to avoid self-grading bias, but for a single-provider
+  Phase 1 setup the bias is acceptable and the simplicity wins.
+- **Fallback to 2.5/5 on unparseable judge output.** Rather than crashing the
+  entire eval run when the judge returns malformed JSON, we log the default and
+  continue. Robustness over precision for a development eval harness.
+- **Baseline numbers (2026-06-11):** Hit-rate@5 = 85%, MRR = 0.758,
+  Correctness = 3.45/5, Faithfulness = 4.25/5. These are the numbers to beat
+  in Phase 2 with hybrid search and reranking.

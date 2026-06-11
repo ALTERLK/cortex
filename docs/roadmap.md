@@ -13,7 +13,7 @@ self-test → hands-on exercise → commit + decision log entry.
 | M2 | Embeddings + vector store (local BGE-M3, Qdrant, incremental ingest) | ✅ done | ingest a folder; nearest-neighbor search returns sensible hits |
 | M3 | Retrieval + cited generation — **first usable RAG** | ✅ done | CLI Q&A answers with [1][2] citations grounded in sources |
 | M4 | Agent layer (hand-written tool-use loop; LLM decides when/what to retrieve) | ✅ done | multi-step questions trigger ≥2 retrievals; max-iteration guard tested |
-| M5 | Evaluation harness — **the differentiator** (30–50 Q eval set; hit-rate@k, MRR; LLM-as-judge) | ⬜ | `eval` command outputs a scored report; baseline numbers recorded here |
+| M5 | Evaluation harness — **the differentiator** (30–50 Q eval set; hit-rate@k, MRR; LLM-as-judge) | ✅ done | `eval` command outputs a scored report; baseline numbers recorded here |
 | M6 | FastAPI service + observability + deployment (SSE streaming; latency/token/cost logs; Docker) | ⬜ | public URL answers via `curl`; logs show per-request cost |
 | M7 | Minimal frontend (Streamlit chat with expandable citations) | ⬜ | demo-able in browser |
 
@@ -30,6 +30,6 @@ Dropped: LoRA fine-tuning (lowest relevance to the AI-application-engineer targe
 
 ## Baseline numbers (filled at M5, updated by every Phase 2 change)
 
-| Date | Change | Hit-rate@5 | MRR | Judge score | Notes |
-|---|---|---|---|---|---|
-| — | — | — | — | — | — |
+| Date | Change | Hit-rate@5 | MRR | Correctness | Faithfulness | Notes |
+|---|---|---|---|---|---|---|
+| 2026-06-11 | M5 baseline (chunk_size=400, overlap=50, BGE-M3, top_k=5) | 85.0% | 0.758 | 3.45/5 | 4.25/5 | 20-question eval set, Claude Haiku via 4SAPI |

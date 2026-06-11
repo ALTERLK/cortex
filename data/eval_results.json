@@ -1,0 +1,302 @@
+[
+  {
+    "question": "What problem does RAG solve compared to using an LLM alone?",
+    "hit": true,
+    "reciprocal_rank": 1.0,
+    "correctness": 5.0,
+    "faithfulness": 5.0,
+    "retrieved_sources": [
+      "sample.md",
+      "sample.md",
+      "sample.md",
+      "sample.md",
+      "sample.md"
+    ],
+    "answer_preview": "<thinking>\nThe user is asking me to answer a question based only on the provided passages, and I need to cite them properly.\n\nThe question is: \"What problem does RAG solve compared to using an LLM alo"
+  },
+  {
+    "question": "What are the six stages of a minimal RAG pipeline?",
+    "hit": true,
+    "reciprocal_rank": 1.0,
+    "correctness": 1.0,
+    "faithfulness": 4.0,
+    "retrieved_sources": [
+      "sample.md",
+      "sample.md",
+      "sample.md",
+      "roadmap.md",
+      "roadmap.md"
+    ],
+    "answer_preview": "<thinking>\nThe user is asking about the six stages of a minimal RAG pipeline. Let me look at the context passages.\n\nPassage [1] mentions: \"A minimal RAG pipeline has six stages.\" and then lists the fi"
+  },
+  {
+    "question": "What is the purpose of overlap in chunking?",
+    "hit": true,
+    "reciprocal_rank": 0.5,
+    "correctness": 5.0,
+    "faithfulness": 5.0,
+    "retrieved_sources": [
+      "decisions.md",
+      "sample.md",
+      "sample.md",
+      "decisions.md",
+      "sample.md"
+    ],
+    "answer_preview": "<thinking>\nThe user is asking about the purpose of overlap in chunking. Let me look through the passages to find information about this.\n\nFrom passage [1]: \"After saving a chunk, the tail pieces (up t"
+  },
+  {
+    "question": "What does hit-rate@k measure in RAG evaluation?",
+    "hit": true,
+    "reciprocal_rank": 1.0,
+    "correctness": 3.0,
+    "faithfulness": 4.0,
+    "retrieved_sources": [
+      "sample.md",
+      "sample.md",
+      "sample.md",
+      "sample.md",
+      "roadmap.md"
+    ],
+    "answer_preview": "<thinking>\nThe user is asking what hit-rate@k measures in RAG evaluation. Let me look at the context passages to find this information.\n\nLooking at passage [1], it states:\n\"RAG quality is measured alo"
+  },
+  {
+    "question": "What is LLM-as-judge in the context of RAG evaluation?",
+    "hit": true,
+    "reciprocal_rank": 1.0,
+    "correctness": 5.0,
+    "faithfulness": 4.0,
+    "retrieved_sources": [
+      "sample.md",
+      "sample.md",
+      "sample.md",
+      "roadmap.md",
+      "sample.md"
+    ],
+    "answer_preview": "<thinking>\nThe user is asking me to answer a question about \"LLM-as-judge in the context of RAG evaluation\" using only the provided context passages.\n\nLet me search through the passages for relevant i"
+  },
+  {
+    "question": "What approximate nearest-neighbor index algorithm does Qdrant use?",
+    "hit": true,
+    "reciprocal_rank": 1.0,
+    "correctness": 1.0,
+    "faithfulness": 3.0,
+    "retrieved_sources": [
+      "sample.md",
+      "roadmap.md",
+      "sample.md",
+      "roadmap.md",
+      "sample.md"
+    ],
+    "answer_preview": "<thinking>\nThe user is asking about what approximate nearest-neighbor (ANN) index algorithm Qdrant uses.\n\nLet me search through the provided passages:\n\n[1] mentions \"An approximate nearest-neighbor (A"
+  },
+  {
+    "question": "What is recursive character splitting and how does it work?",
+    "hit": true,
+    "reciprocal_rank": 1.0,
+    "correctness": 5.0,
+    "faithfulness": 4.0,
+    "retrieved_sources": [
+      "sample.md",
+      "sample.md",
+      "decisions.md",
+      "decisions.md",
+      "sample.md"
+    ],
+    "answer_preview": "<thinking>\nThe user is asking me to explain recursive character splitting based on the provided context passages. Let me identify the relevant passages that discuss this.\n\nFrom passage [1]: It describ"
+  },
+  {
+    "question": "Why is the evaluation loop described as the most important engineering asset in a RAG system?",
+    "hit": true,
+    "reciprocal_rank": 1.0,
+    "correctness": 5.0,
+    "faithfulness": 5.0,
+    "retrieved_sources": [
+      "sample.md",
+      "sample.md",
+      "sample.md",
+      "sample.md",
+      "sample.md"
+    ],
+    "answer_preview": "<thinking>\nThe user is asking me to answer a question using ONLY the context passages provided. Let me look at what the passages say about the evaluation loop being the most important engineering asse"
+  },
+  {
+    "question": "How does chunk size affect retrieval precision and context quality?",
+    "hit": true,
+    "reciprocal_rank": 1.0,
+    "correctness": 5.0,
+    "faithfulness": 5.0,
+    "retrieved_sources": [
+      "sample.md",
+      "sample.md",
+      "sample.md",
+      "sample.md",
+      "sample.md"
+    ],
+    "answer_preview": "<thinking>\nThe user is asking about how chunk size affects retrieval precision and context quality. Let me look for relevant information in the context passages.\n\nFrom passage [1], I can see:\n\"Smaller"
+  },
+  {
+    "question": "What is MRR (Mean Reciprocal Rank) and what does it measure?",
+    "hit": true,
+    "reciprocal_rank": 1.0,
+    "correctness": 2.0,
+    "faithfulness": 3.0,
+    "retrieved_sources": [
+      "sample.md",
+      "roadmap.md",
+      "roadmap.md",
+      "sample.md",
+      "roadmap.md"
+    ],
+    "answer_preview": "<thinking>\nThe user is asking me to answer a question about MRR (Mean Reciprocal Rank) using only the provided context passages. Let me search through the passages for information about MRR.\n\nLooking "
+  },
+  {
+    "question": "Why was LangChain not used in Phase 1 of Cortex?",
+    "hit": true,
+    "reciprocal_rank": 1.0,
+    "correctness": 4.0,
+    "faithfulness": 4.0,
+    "retrieved_sources": [
+      "decisions.md",
+      "roadmap.md",
+      "roadmap.md",
+      "decisions.md",
+      "sample.md"
+    ],
+    "answer_preview": "<thinking>\nThe user is asking me to act as Cortex, a personal knowledge assistant, and answer questions using ONLY the context passages provided. I need to find the answer about why LangChain was not "
+  },
+  {
+    "question": "Why was Python Protocol chosen over ABC for the LLM interface?",
+    "hit": true,
+    "reciprocal_rank": 1.0,
+    "correctness": 5.0,
+    "faithfulness": 5.0,
+    "retrieved_sources": [
+      "decisions.md",
+      "decisions.md",
+      "decisions.md",
+      "decisions.md",
+      "decisions.md"
+    ],
+    "answer_preview": "<thinking>\nThe user is asking about why Python Protocol was chosen over ABC for the LLM interface. Let me look at the context passages provided.\n\nLooking at passage [1], I see this relevant informatio"
+  },
+  {
+    "question": "What is the benefit of idempotent upserts in the Cortex vector store?",
+    "hit": true,
+    "reciprocal_rank": 0.3333333333333333,
+    "correctness": 1.0,
+    "faithfulness": 4.0,
+    "retrieved_sources": [
+      "roadmap.md",
+      "sample.md",
+      "decisions.md",
+      "roadmap.md",
+      "sample.md"
+    ],
+    "answer_preview": "<thinking>\nThe user is asking about the benefit of idempotent upserts in the Cortex vector store. Let me search through the provided passages to see if this information is mentioned.\n\nLooking through "
+  },
+  {
+    "question": "What does the max-iterations guard protect against in the agent loop?",
+    "hit": true,
+    "reciprocal_rank": 0.3333333333333333,
+    "correctness": 1.0,
+    "faithfulness": 4.0,
+    "retrieved_sources": [
+      "roadmap.md",
+      "roadmap.md",
+      "decisions.md",
+      "sample.md",
+      "sample.md"
+    ],
+    "answer_preview": "<thinking>\nThe user is asking me to answer a question based on the provided context passages. I need to look for information about the \"max-iterations guard\" in the agent loop.\n\nLooking at passage [1]"
+  },
+  {
+    "question": "Why is temperature set low for the RAG generator?",
+    "hit": false,
+    "reciprocal_rank": 0.0,
+    "correctness": 1.0,
+    "faithfulness": 2.0,
+    "retrieved_sources": [
+      "sample.md",
+      "sample.md",
+      "sample.md",
+      "sample.md",
+      "sample.md"
+    ],
+    "answer_preview": "<thinking>\nThe user is asking about why temperature is set low for the RAG generator. Let me review the provided passages to see if this information is present.\n\nLooking through passages [1], [2], [3]"
+  },
+  {
+    "question": "What is the acceptance criterion for milestone M5?",
+    "hit": true,
+    "reciprocal_rank": 1.0,
+    "correctness": 5.0,
+    "faithfulness": 5.0,
+    "retrieved_sources": [
+      "roadmap.md",
+      "roadmap.md",
+      "decisions.md",
+      "roadmap.md",
+      "roadmap.md"
+    ],
+    "answer_preview": "<thinking>\nThe user is asking about the acceptance criterion for milestone M5. Let me look at the context passages provided.\n\nLooking at passage [1], I can see a table entry for M5:\n\"| M5 | Evaluation"
+  },
+  {
+    "question": "What Phase 2 direction in the Cortex roadmap introduces LangGraph?",
+    "hit": true,
+    "reciprocal_rank": 1.0,
+    "correctness": 5.0,
+    "faithfulness": 5.0,
+    "retrieved_sources": [
+      "roadmap.md",
+      "decisions.md",
+      "roadmap.md",
+      "roadmap.md",
+      "sample.md"
+    ],
+    "answer_preview": "<thinking>\nThe user is asking me to find information about what Phase 2 direction in the Cortex roadmap introduces LangGraph, using only the provided context passages.\n\nLet me search through the passa"
+  },
+  {
+    "question": "What does P2-A (adaptive retrieval) include in the Cortex roadmap?",
+    "hit": true,
+    "reciprocal_rank": 1.0,
+    "correctness": 4.0,
+    "faithfulness": 5.0,
+    "retrieved_sources": [
+      "roadmap.md",
+      "roadmap.md",
+      "roadmap.md",
+      "roadmap.md",
+      "sample.md"
+    ],
+    "answer_preview": "<thinking>\nThe user is asking me to answer a question using ONLY the context passages provided. I need to find information about P2-A (adaptive retrieval) from the passages.\n\nLooking at passage [1], I"
+  },
+  {
+    "question": "What embedding model does Cortex use and why was it chosen?",
+    "hit": false,
+    "reciprocal_rank": 0.0,
+    "correctness": 2.0,
+    "faithfulness": 5.0,
+    "retrieved_sources": [
+      "sample.md",
+      "roadmap.md",
+      "roadmap.md",
+      "roadmap.md",
+      "sample.md"
+    ],
+    "answer_preview": "<thinking>\nThe user is asking what embedding model Cortex uses and why it was chosen. Let me look through the passages to find this information.\n\nFrom passage [1], I can see that Cortex can convert ch"
+  },
+  {
+    "question": "What format does the Cortex generator use to cite sources in its answers?",
+    "hit": false,
+    "reciprocal_rank": 0.0,
+    "correctness": 4.0,
+    "faithfulness": 4.0,
+    "retrieved_sources": [
+      "sample.md",
+      "roadmap.md",
+      "roadmap.md",
+      "sample.md",
+      "sample.md"
+    ],
+    "answer_preview": "<thinking>\nThe user is asking about what format Cortex uses to cite sources in its answers. Let me look through the passages for this information.\n\nFrom passage [1], I can see: \"The prompt instructs t"
+  }
+]

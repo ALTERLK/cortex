@@ -6,7 +6,8 @@ uv.lock.bak
 .venv/
 venv/
 .env
-data/
+data/qdrant/
+!data/eval_set.json
 .vscode/
 .idea/
 .DS_Store
