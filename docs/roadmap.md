@@ -9,7 +9,7 @@ self-test → hands-on exercise → commit + decision log entry.
 | # | Milestone | Status | Acceptance |
 |---|---|---|---|
 | M0 | Skeleton + LLM abstraction (provider-agnostic client, config, smoke test) | ✅ done | `uv run pytest` green; smoke test makes a live chat + tool-call round |
-| M1 | Document loading + chunking (.md/.txt/.pdf, recursive chunking + overlap, metadata) | ⬜ | chunker unit-tested; CLI prints chunks for a sample doc |
+| M1 | Document loading + chunking (.md/.txt/.pdf, recursive chunking + overlap, metadata) | ✅ done | chunker unit-tested; CLI prints chunks for a sample doc |
 | M2 | Embeddings + vector store (local BGE-M3, Qdrant, incremental ingest) | ⬜ | ingest a folder; nearest-neighbor search returns sensible hits |
 | M3 | Retrieval + cited generation — **first usable RAG** | ⬜ | CLI Q&A answers with [1][2] citations grounded in sources |
 | M4 | Agent layer (hand-written tool-use loop; LLM decides when/what to retrieve) | ⬜ | multi-step questions trigger ≥2 retrievals; max-iteration guard tested |

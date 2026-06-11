@@ -26,3 +26,20 @@ each entry should be explainable in ~30 seconds with a trade-off.
   provider from DeepSeek direct to Claude via 4SAPI (OpenAI-compatible proxy).
   Proved the abstraction works: zero call-site changes outside `config.py` and the
   adapter file itself.
+
+## 2026-06-11 · M1
+
+- **Recursive character splitting over fixed-size splitting.** Tries semantic
+  separators in priority order (\n\n → \n → space → char) so paragraph boundaries
+  are respected when possible, falling back to finer splits only when necessary.
+  Trade-off: slightly more complex than a naïve fixed-size split, but produces more
+  semantically coherent chunks — important because chunk quality sets the RAG ceiling.
+- **Piece-level overlap, not character-level.** After saving a chunk, the tail
+  pieces (up to `overlap` chars total) are carried into the next chunk's starting
+  set. True character-level overlap would require splitting inside a piece; piece-level
+  overlap is simpler and sufficient for preventing boundary cuts on most sentences.
+- **`Document` → `Chunk` pipeline keeps metadata through every stage.** Each Chunk
+  carries `source` (filename) and `chunk_index` so the final answer can always be
+  traced back to its origin file — the citation requirement drives this from day one.
+- **pypdf for PDF loading, lazy import.** Only imported when a .pdf path is detected,
+  so the non-PDF code path has no startup cost from the PDF library.
