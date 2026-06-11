@@ -86,6 +86,34 @@ each entry should be explainable in ~30 seconds with a trade-off.
   (claude-haiku-4-5-20251001-thinking) emits reasoning in `<thinking>` tags;
   stripping them keeps the displayed answer clean without losing the actual reply.
 
+## 2026-06-11 · Phase 1.5 (global improvement round)
+
+- **Agent exposed via `mode` parameter, not a separate endpoint.** One /ask
+  endpoint with `mode: "rag" | "agent"` keeps the client contract uniform; the
+  response schema is a superset (tool_calls/iterations only filled in agent mode).
+- **`chat_stream` yields deltas, then one final LLMResponse.** A single generator
+  covers both needs (display + usage accounting) without callbacks or futures.
+  Deliberately no `tools` parameter: streaming tool-call fragments is protocol
+  complexity the agent loop avoids by streaming only the final answer.
+- **Agent streaming = tool events, not token deltas.** `run_events()` yields each
+  ToolCallRecord live; the final answer arrives as one event. Live progress with
+  zero tool-call-delta parsing; true token streaming stays rag-mode-only.
+- **`ThinkingStreamFilter` is a stateful scanner.** `<thinking>` tags arrive torn
+  across stream chunks ("`<thi`" + "`nking>`"), so the filter holds back any
+  suffix that could be a partial tag and releases it when disambiguated.
+- **Stateless multi-turn: the browser owns the conversation.** History rides in
+  every request (server caps at 12 turns); no sessions, no sticky routing.
+  History `role` is validated to user/assistant — "system" is rejected to block
+  prompt injection through the history channel.
+- **MCP server reuses the RAG components directly.** ~100 lines of glue expose
+  search/ask as MCP tools over stdio; lazy singletons keep the handshake instant
+  (the embedding model loads on first tool call, not at startup).
+- **Two stdio-transport hazards found the hard way.** (1) stdout IS the JSON-RPC
+  channel — HF/tqdm progress bars must be disabled or they corrupt the protocol.
+  (2) FastMCP runs tools in a worker thread, and importing torch from a non-main
+  thread deadlocks on Windows — the fix is warming the import in the main thread
+  before `mcp.run()`, while the model itself still loads lazily.
+
 ## 2026-06-11 · M7
 
 - **Hand-written HTML/CSS/JS over Streamlit (and over React).** The owner asked for

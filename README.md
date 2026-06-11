@@ -17,7 +17,9 @@ and explainable line by line.
 - **Observability** — structured JSON logs with per-request latency, token counts,
   and cost estimate.
 - **Liquid-glass web UI** — hand-written HTML/CSS/JS chat interface with clickable
-  citations, served straight from FastAPI. No Node toolchain.
+  citations, SSE token streaming, and live agent tool timelines. No Node toolchain.
+- **MCP server** — exposes the knowledge base as Model Context Protocol tools, so
+  Claude Code / Claude Desktop can search your documents directly.
 
 ## Baseline numbers (eval set: 20 questions, 2026-06-11)
 
@@ -72,6 +74,23 @@ uv run python scripts/serve.py
 ```
 
 Run the test suite (offline, no API key needed): `uv run pytest`
+
+## MCP server
+
+Cortex doubles as an [MCP](https://modelcontextprotocol.io) server exposing
+`search_knowledge_base(query, top_k)` and `ask_knowledge_base(question)`.
+The repo ships a project-scope [`.mcp.json`](.mcp.json) — open this folder in
+Claude Code and approve the server, or register it globally:
+
+```sh
+claude mcp add cortex -- uv run --directory <path-to-repo> python scripts/mcp_serve.py
+```
+
+Verify the stdio round trip without any client:
+
+```sh
+uv run python scripts/mcp_smoke.py
+```
 
 ## Tech stack
 

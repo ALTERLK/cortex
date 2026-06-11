@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "cortex": {
+      "command": "uv",
+      "args": ["run", "python", "scripts/mcp_serve.py"]
+    }
+  }
+}

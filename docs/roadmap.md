@@ -14,7 +14,7 @@ self-test → hands-on exercise → commit + decision log entry.
 | M3 | Retrieval + cited generation — **first usable RAG** | ✅ done | CLI Q&A answers with [1][2] citations grounded in sources |
 | M4 | Agent layer (hand-written tool-use loop; LLM decides when/what to retrieve) | ✅ done | multi-step questions trigger ≥2 retrievals; max-iteration guard tested |
 | M5 | Evaluation harness — **the differentiator** (30–50 Q eval set; hit-rate@k, MRR; LLM-as-judge) | ✅ done | `eval` command outputs a scored report; baseline numbers recorded here |
-| M6 | FastAPI service + observability + deployment (SSE streaming; latency/token/cost logs; Docker) | ✅ done | `uv run pytest` 75 green; server runs via `scripts/serve.py`; logs show per-request cost |
+| M6 | FastAPI service + observability + deployment (SSE streaming; latency/token/cost logs; Docker) | ✅ done | SSE streaming live on `/ask/stream`; logs show per-request cost; cloud deploy pending |
 | M7 | Liquid-glass web frontend (hand-written HTML/CSS/JS chat UI with clickable citations, served by FastAPI) | ✅ done | demo-able at `/`; citations expand to source passages; 79 tests green |
 
 ## Phase 2 — from "works" to "advanced" (order matters)
@@ -24,7 +24,7 @@ self-test → hands-on exercise → commit + decision log entry.
 | P2-A | Adaptive retrieval: query rewrite, hybrid (dense+sparse), reranker, LLM-made retrieval plan | ⬜ | measured hit-rate/answer-quality lift vs M5 baseline |
 | P2-B | Long-term memory: conversation summarization + user profile store | ⬜ | cross-session continuity |
 | P2-C | Multi-agent (router / retrieval / synthesis) with LangGraph | ⬜ | orchestration-framework keyword + scheduling story |
-| opt | Expose Cortex as an MCP server; multimodal ingest | ⬜ | low effort, high keyword value |
+| opt | Expose Cortex as an MCP server ✅ (done early, 2026-06-11); multimodal ingest ⬜ | partial | low effort, high keyword value |
 
 Dropped: LoRA fine-tuning (lowest relevance to the AI-application-engineer target, highest time cost).
 
