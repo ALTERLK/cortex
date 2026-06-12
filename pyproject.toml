@@ -1,8 +1,10 @@
 [project]
 name = "cortex"
-version = "0.1.0"
+version = "1.0.0"
 description = "Agentic RAG knowledge assistant: ask questions over your own documents, get answers with citations."
 readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
 requires-python = ">=3.12"
 dependencies = [
     "openai>=1.60",
