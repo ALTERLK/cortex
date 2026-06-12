@@ -1,11 +1,16 @@
 # Cortex — Agentic RAG Knowledge Assistant
 
 [![CI](https://github.com/ALTERLK/cortex/actions/workflows/ci.yml/badge.svg)](https://github.com/ALTERLK/cortex/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](pyproject.toml)
 
 Ask questions over your own documents and get answers **with source citations**.
 Built from scratch — no LangChain, no LlamaIndex: the retrieval pipeline, the
 agentic tool-use loop, the evaluation harness, and the web UI are all hand-written
-and explainable line by line.
+and explainable line by line. Every retrieval improvement is A/B-measured on a
+self-built eval set: **hit-rate@5 77.8% → 88.9%**.
+
+![Cortex web UI](docs/assets/ui.png)
 
 ## Highlights
 

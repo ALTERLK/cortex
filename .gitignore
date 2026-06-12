@@ -14,3 +14,6 @@ data/qdrant/
 .claude/
 data/*.log
 corpus/
+INTERVIEW_PREP.md
+study/
+promo/
