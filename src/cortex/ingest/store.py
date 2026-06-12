@@ -118,6 +118,31 @@ class VectorStore:
         """Return the total number of stored vectors."""
         return self._client.count(collection_name=COLLECTION_NAME).count
 
+    def all_chunks(self) -> list[SearchResult]:
+        """Return every stored chunk (score=0.0) — used to build sparse indexes."""
+        out: list[SearchResult] = []
+        offset = None
+        while True:
+            points, offset = self._client.scroll(
+                collection_name=COLLECTION_NAME,
+                limit=512,
+                offset=offset,
+                with_payload=True,
+                with_vectors=False,
+            )
+            for p in points:
+                out.append(
+                    SearchResult(
+                        score=0.0,
+                        text=p.payload.get("text", ""),
+                        source=p.payload.get("source", ""),
+                        chunk_index=p.payload.get("chunk_index", -1),
+                    )
+                )
+            if offset is None:
+                break
+        return out
+
     def list_sources(self) -> list[str]:
         """Return the distinct source filenames in the collection.
 

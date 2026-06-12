@@ -21,10 +21,12 @@ from fastapi.staticfiles import StaticFiles
 
 from cortex.agent.loop import AgentLoop
 from cortex.agent.tools import ToolExecutor
+from cortex.config import get_settings
 from cortex.ingest.embedder import Embedder
 from cortex.ingest.store import VectorStore
 from cortex.llm import get_llm_client
 from cortex.rag.generator import Generator
+from cortex.rag.hybrid import HybridRetriever
 from cortex.rag.retriever import Retriever
 
 logger = logging.getLogger("cortex.api")
@@ -38,7 +40,16 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     store = VectorStore(path="data/qdrant")
     store.ensure_collection(embedder.dimension)
 
-    retriever = Retriever(store, embedder)
+    # Retrieval strategy is a config switch so eval can A/B strategies fairly.
+    mode = get_settings().retrieval_mode
+    if mode == "dense":
+        retriever = Retriever(store, embedder)
+    else:
+        retriever = HybridRetriever(store, embedder)  # builds BM25 at startup
+        if mode == "hybrid_rerank":
+            from cortex.rag.reranker import Reranker, RerankingRetriever
+
+            retriever = RerankingRetriever(retriever, Reranker())
     llm = get_llm_client()
 
     app.state.embedder = embedder
@@ -47,6 +58,10 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     app.state.generator = Generator(llm)
     # The M4 hand-written tool-use loop, exposed via mode="agent" on /ask.
     app.state.agent = AgentLoop(llm, ToolExecutor(retriever))
+    # Standalone-query rewriting for multi-turn rag requests.
+    from cortex.rag.rewriter import QueryRewriter
+
+    app.state.rewriter = QueryRewriter(llm) if get_settings().query_rewrite else None
 
     logger.info(json.dumps({"event": "startup", "status": "ready"}))
     yield

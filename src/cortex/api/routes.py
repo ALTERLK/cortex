@@ -53,6 +53,14 @@ def _history_messages(body: AskRequest) -> list[dict]:
     return [t.model_dump() for t in body.history[-_MAX_HISTORY_TURNS:]]
 
 
+def _retrieval_query(request: Request, question: str, history: list[dict]) -> str:
+    """The query used for retrieval: rewritten when history demands it."""
+    rewriter = getattr(request.app.state, "rewriter", None)
+    if rewriter is None or not history:
+        return question
+    return rewriter.rewrite(question, history)
+
+
 @router.get("/health")
 def health() -> dict[str, str]:
     return {"status": "ok"}
@@ -74,7 +82,8 @@ def ask(body: AskRequest, request: Request) -> AskResponse:
         ]
         iterations = result.iterations
     else:
-        passages = request.app.state.retriever.retrieve(body.question, top_k=body.top_k)
+        query = _retrieval_query(request, body.question, history)
+        passages = request.app.state.retriever.retrieve(query, top_k=body.top_k)
         result = request.app.state.generator.generate(body.question, passages, history)
         sources = [
             SourceRef(source=p.source, chunk_index=p.chunk_index, score=round(p.score, 4), text=p.text)
@@ -139,7 +148,8 @@ def ask_stream(body: AskRequest, request: Request) -> StreamingResponse:
     history = _history_messages(body)
 
     def rag_events() -> Iterator[str]:
-        passages = state.retriever.retrieve(body.question, top_k=body.top_k)
+        query = _retrieval_query(request, body.question, history)
+        passages = state.retriever.retrieve(query, top_k=body.top_k)
         yield _sse("sources", [
             SourceRef(source=p.source, chunk_index=p.chunk_index,
                       score=round(p.score, 4), text=p.text).model_dump()

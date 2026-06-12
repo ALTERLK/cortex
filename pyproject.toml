@@ -13,6 +13,7 @@ dependencies = [
     "fastapi>=0.115",
     "uvicorn[standard]>=0.32",
     "mcp>=1.27.2",
+    "jieba>=0.42.1",
 ]
 
 [dependency-groups]

@@ -31,6 +31,15 @@ class Settings(BaseSettings):
     # Override to redirect HuggingFace downloads away from the default C: cache.
     hf_home: str = ""
 
+    # --- retrieval ---
+    # "dense"         = embedding similarity only (Phase 1 baseline)
+    # "hybrid"        = dense + BM25 fused with reciprocal rank fusion (P2-A)
+    # "hybrid_rerank" = hybrid candidates re-scored by a cross-encoder
+    retrieval_mode: str = "hybrid"
+    # Rewrite history-dependent questions into standalone queries before
+    # retrieval (rag mode only; costs one extra LLM call per follow-up).
+    query_rewrite: bool = True
+
     # --- API ---
     # Comma-separated roots that /ingest is allowed to read. Anything outside
     # is rejected — otherwise a public deployment would let anyone index (and
