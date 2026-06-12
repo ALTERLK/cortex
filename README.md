@@ -9,6 +9,9 @@ and explainable line by line.
 
 ## Highlights
 
+- **Adaptive retrieval, every step measured** — hybrid search (hand-written BM25
+  + reciprocal rank fusion), cross-encoder reranking, and LLM query rewriting,
+  each justified by an A/B run on the same eval harness: hit-rate@5 77.8% → 88.9%.
 - **Hand-written agent loop** — the LLM decides whether, what, and how many times
   to retrieve, via a ~60-line tool-use loop (`src/cortex/agent/loop.py`). No framework.
 - **Provider-agnostic LLM layer** — a `Protocol`-based abstraction
@@ -23,18 +26,23 @@ and explainable line by line.
 - **MCP server** — exposes the knowledge base as Model Context Protocol tools, so
   Claude Code / Claude Desktop can search your documents directly.
 
-## Baseline numbers (eval set: 20 questions, 2026-06-11)
+## Measured retrieval lift (eval v2: 50 questions, 360-doc corpus, 2026-06-12)
 
-| Metric | Value |
-|---|---|
-| Retrieval hit-rate@5 | **85.0%** |
-| MRR | **0.758** |
-| Answer correctness (LLM-as-judge, 1–5) | 3.45 |
-| Answer faithfulness (LLM-as-judge, 1–5) | 4.25 |
+Corpus: FastAPI docs (EN+ZH), uv docs, 4 arXiv papers → **8,342 chunks**.
+Eval set: 50 paraphrased questions across 5 categories — factual, multi-hop,
+cross-lingual (Chinese questions over English docs), follow-up (with
+conversation history), and unanswerable traps (correct behaviour = refusal).
 
-Reproduce with `uv run python scripts/run_eval.py`. Every Phase 2 retrieval
-improvement (hybrid search, reranking) must beat these numbers — see
-[docs/roadmap.md](docs/roadmap.md).
+| Configuration | hit-rate@5 | MRR | Correctness | What it fixed |
+|---|---|---|---|---|
+| Dense only (BGE-M3) | 77.8% | 0.567 | 3.54/5 | baseline |
+| + Hybrid (hand-written BM25 + RRF) | 82.2% | 0.589 | 3.44/5 | cross-lingual 70%→90% |
+| + Cross-encoder reranker | 84.4% | 0.611 | 3.68/5 | multi-hop 70%→90% |
+| + LLM query rewriting | **88.9%** | **0.640** | **3.92/5** | follow-up 40%→80% |
+
+Refusal accuracy on unanswerable questions: **100%** in every configuration.
+Reproduce: `uv run python scripts/run_eval.py --retriever hybrid_rerank --rewrite`
+(strategies: `dense` | `hybrid` | `hybrid_rerank`, plus `--rewrite`).
 
 ## Architecture
 
@@ -65,10 +73,13 @@ uv sync
 # 2. Configure: any OpenAI-compatible provider works
 copy .env.example .env        # set LLM_API_KEY, LLM_BASE_URL, LLM_MODEL
 
-# 3. Index your documents (first run downloads BGE-M3, ~2.3 GB)
-uv run python scripts/ingest.py
+# 3. (Optional) fetch the demo corpus: FastAPI/uv docs + arXiv papers, 360 files
+uv run python scripts/fetch_corpus.py
 
-# 4. Serve
+# 4. Index documents (first run downloads BGE-M3, ~2.3 GB)
+uv run python scripts/ingest.py corpus
+
+# 5. Serve
 uv run python scripts/serve.py
 # open http://localhost:8000  — chat UI with citations
 # or:  curl -X POST localhost:8000/ask -H "Content-Type: application/json" \

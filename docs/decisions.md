@@ -86,6 +86,41 @@ each entry should be explainable in ~30 seconds with a trade-off.
   (claude-haiku-4-5-20251001-thinking) emits reasoning in `<thinking>` tags;
   stripping them keeps the displayed answer clean without losing the actual reply.
 
+## 2026-06-12 · P2-A (adaptive retrieval) + de-toy round
+
+- **Real corpus before any retrieval work.** 360 public documents (FastAPI docs
+  EN+ZH, uv docs, 4 arXiv papers) → 8,342 chunks, fetched reproducibly by
+  scripts/fetch_corpus.py (corpus/ itself is git-ignored). Retrieval numbers
+  measured on 3 self-authored files are not numbers; these are.
+- **Eval set v2 is category-stratified and includes traps.** 50 questions:
+  factual / multihop / crosslingual (Chinese questions over English docs) /
+  followup (carry history) / unanswerable (correct behaviour = refusal, scored
+  deterministically by refusal markers — no judge bias on the easiest cases).
+  Question wording is paraphrased, never copied from the docs, to limit leakage.
+- **BM25 hand-written, not a library or Qdrant sparse vectors.** ~80 lines,
+  jieba for CJK + regex for Latin; index rebuilt at startup from the chunks
+  already in Qdrant (one source of truth, no sync problem). Trade-off: O(corpus)
+  memory and startup scan — fine at 8k chunks, revisit at 1M.
+- **RRF over score mixing.** Cosine similarities and BM25 weights live on
+  incomparable scales; reciprocal-rank fusion uses only ranks (k=60). No tuning,
+  no normalisation headaches, robust default.
+- **Reranker as a second stage, not a replacement.** bge-reranker-v2-m3
+  cross-encoder re-scores the fused top-20 into a final top-5: bi-encoder for
+  recall at scale, cross-encoder for precision on a shortlist. Costs extra
+  latency per query on CPU — measured and reported, not hidden.
+- **Query rewriting only when history exists.** One small LLM call converts
+  "它是在响应之前还是之后执行？" into a standalone query; zero cost for
+  single-turn traffic; falls back to the raw question on any failure.
+- **Incremental ingest is now real.** Chunks carry a sha256 file hash; unchanged
+  files are skipped, changed files are delete-then-rewritten (fixes stale chunks
+  surviving file shrinkage). Source labels are root-relative paths so en/zh
+  translations of index.md no longer collide.
+- **Provider failures are a type, not a stack trace.** Adapters normalize vendor
+  exceptions into LLMUnavailableError; the API maps it to 502 (or an in-band SSE
+  `error` event mid-stream). Auth = X-API-Key with constant-time compare;
+  rate limiting = hand-written per-IP sliding window; request ids flow through a
+  ContextVar into every structured log line.
+
 ## 2026-06-11 · Phase 1.5 (global improvement round)
 
 - **Agent exposed via `mode` parameter, not a separate endpoint.** One /ask

@@ -1,0 +1,852 @@
+[
+  {
+    "question": "What does using a wildcard \"*\" for allowed origins in CORS prevent you from doing?",
+    "category": "factual",
+    "answerable": true,
+    "hit": true,
+    "reciprocal_rank": 0.3333333333333333,
+    "correctness": 5.0,
+    "faithfulness": 5.0,
+    "retrieved_sources": [
+      "fastapi/zh/tutorial/cors.md",
+      "fastapi/zh/tutorial/cors.md",
+      "fastapi/en/tutorial/cors.md",
+      "fastapi/en/tutorial/cors.md",
+      "fastapi/en/tutorial/cors.md"
+    ],
+    "answer_preview": "Using a wildcard `\"*\"` for allowed origins prevents you from communicating with **credentials**. \n\nSpecifically, [1] states that while `\"*\"` allows all origins, \"this only allows certain types of comm"
+  },
+  {
+    "question": "Which three components together define an 'origin' in the context of CORS?",
+    "category": "factual",
+    "answerable": true,
+    "hit": true,
+    "reciprocal_rank": 0.5,
+    "correctness": 5.0,
+    "faithfulness": 5.0,
+    "retrieved_sources": [
+      "fastapi/zh/tutorial/cors.md",
+      "fastapi/en/tutorial/cors.md",
+      "fastapi/en/tutorial/cors.md",
+      "fastapi/zh/tutorial/cors.md",
+      "fastapi/zh/tutorial/cors.md"
+    ],
+    "answer_preview": "According to the provided passages, an origin in the context of CORS is defined by three components: **protocol**, **domain**, and **port** [3].\n\nSpecifically, these include:\n- **Protocol**: `http` or"
+  },
+  {
+    "question": "How do you schedule work to run after returning a response in FastAPI?",
+    "category": "factual",
+    "answerable": true,
+    "hit": true,
+    "reciprocal_rank": 0.5,
+    "correctness": 3.0,
+    "faithfulness": 4.0,
+    "retrieved_sources": [
+      "fastapi/en/reference/background.md",
+      "fastapi/en/tutorial/background-tasks.md",
+      "fastapi/en/tutorial/background-tasks.md",
+      "fastapi/en/tutorial/dependencies/dependencies-with-yield.md",
+      "fastapi/zh/tutorial/dependencies/dependencies-with-yield.md"
+    ],
+    "answer_preview": "In FastAPI, you schedule work to run after returning a response using **`BackgroundTasks`** [1].\n\nHere's how it works:\n\n1. **Import it**: You can import `BackgroundTasks` directly from `fastapi` [1]\n\n"
+  },
+  {
+    "question": "What command does the FastAPI tutorial use to launch the development server?",
+    "category": "factual",
+    "answerable": true,
+    "hit": true,
+    "reciprocal_rank": 0.2,
+    "correctness": 3.0,
+    "faithfulness": 4.0,
+    "retrieved_sources": [
+      "fastapi/en/fastapi-cli.md",
+      "fastapi/zh/index.md",
+      "fastapi/en/index.md",
+      "fastapi/zh/index.md",
+      "fastapi/en/tutorial/first-steps.md"
+    ],
+    "answer_preview": "The FastAPI tutorial uses the `fastapi dev` command to launch the development server [5]."
+  },
+  {
+    "question": "In FastAPI, what happens to function parameters that are not part of the path?",
+    "category": "factual",
+    "answerable": true,
+    "hit": true,
+    "reciprocal_rank": 1.0,
+    "correctness": 5.0,
+    "faithfulness": 5.0,
+    "retrieved_sources": [
+      "fastapi/en/tutorial/query-params.md",
+      "fastapi/zh/tutorial/dependencies/classes-as-dependencies.md",
+      "fastapi/en/tutorial/dependencies/classes-as-dependencies.md",
+      "fastapi/en/tutorial/query-params.md",
+      "fastapi/en/tutorial/body.md"
+    ],
+    "answer_preview": "When you declare function parameters that are not part of the path parameters in FastAPI, they are automatically interpreted as \"query\" parameters [1]."
+  },
+  {
+    "question": "What benefit do you get from declaring a type annotation on a FastAPI path parameter?",
+    "category": "factual",
+    "answerable": true,
+    "hit": true,
+    "reciprocal_rank": 0.5,
+    "correctness": 5.0,
+    "faithfulness": 5.0,
+    "retrieved_sources": [
+      "fastapi/en/python-types.md",
+      "fastapi/en/tutorial/path-params.md",
+      "fastapi/zh/python-types.md",
+      "fastapi/en/advanced/using-request-directly.md",
+      "fastapi/en/tutorial/response-model.md"
+    ],
+    "answer_preview": "When you declare a type annotation on a FastAPI path parameter, you get several benefits:\n\n* **Editor support** and **type checks** [1]\n* **Automatic, interactive documentation** integrating Swagger U"
+  },
+  {
+    "question": "When should a FastAPI path operation be declared with plain def instead of async def?",
+    "category": "factual",
+    "answerable": true,
+    "hit": true,
+    "reciprocal_rank": 0.5,
+    "correctness": 4.0,
+    "faithfulness": 3.0,
+    "retrieved_sources": [
+      "fastapi/zh/async.md",
+      "fastapi/en/async.md",
+      "fastapi/en/advanced/stream-data.md",
+      "fastapi/en/advanced/dataclasses.md",
+      "fastapi/en/tutorial/dependencies/index.md"
+    ],
+    "answer_preview": "According to the provided passages, you should use plain `def` instead of `async def` for a FastAPI path operation **when it performs blocking I/O operations**.\n\nSpecifically, passage [2] states: \"it'"
+  },
+  {
+    "question": "How is a dependency declared in FastAPI's dependency injection system?",
+    "category": "factual",
+    "answerable": true,
+    "hit": true,
+    "reciprocal_rank": 0.5,
+    "correctness": 2.0,
+    "faithfulness": 4.0,
+    "retrieved_sources": [
+      "fastapi/en/tutorial/dependencies/classes-as-dependencies.md",
+      "fastapi/en/tutorial/dependencies/index.md",
+      "fastapi/en/tutorial/dependencies/index.md",
+      "fastapi/zh/tutorial/dependencies/index.md",
+      "fastapi/en/alternatives.md"
+    ],
+    "answer_preview": "Based on the provided passages, a dependency in FastAPI's dependency injection system is declared by:\n\n1. **Using it as a parameter in a path operation function**: You declare a dependency by includin"
+  },
+  {
+    "question": "What does the tokenUrl parameter of OAuth2PasswordBearer declare?",
+    "category": "factual",
+    "answerable": true,
+    "hit": true,
+    "reciprocal_rank": 1.0,
+    "correctness": 4.0,
+    "faithfulness": 5.0,
+    "retrieved_sources": [
+      "fastapi/en/tutorial/security/first-steps.md",
+      "fastapi/zh/tutorial/security/first-steps.md",
+      "fastapi/zh/tutorial/security/first-steps.md",
+      "fastapi/zh/tutorial/security/first-steps.md",
+      "fastapi/en/tutorial/security/simple-oauth2.md"
+    ],
+    "answer_preview": "The `tokenUrl` parameter of `OAuth2PasswordBearer` declares the URL that the client will use to send the username and password in order to get a token. [1] Specifically, it contains the URL that \"the "
+  },
+  {
+    "question": "How do you return an HTTP error such as 404 to the client in FastAPI?",
+    "category": "factual",
+    "answerable": true,
+    "hit": true,
+    "reciprocal_rank": 0.3333333333333333,
+    "correctness": 2.0,
+    "faithfulness": 4.0,
+    "retrieved_sources": [
+      "fastapi/zh/how-to/authentication-error-status-code.md",
+      "fastapi/zh/how-to/authentication-error-status-code.md",
+      "fastapi/en/tutorial/handling-errors.md",
+      "fastapi/en/how-to/authentication-error-status-code.md",
+      "fastapi/en/tutorial/handling-errors.md"
+    ],
+    "answer_preview": "To return an HTTP error such as 404 to the client in FastAPI, you use `HTTPException` [3]. \n\nWhen you `raise` an `HTTPException`, FastAPI has default exception handlers that are in charge of returning"
+  },
+  {
+    "question": "Why does FastAPI recommend UploadFile over bytes for file uploads?",
+    "category": "factual",
+    "answerable": true,
+    "hit": true,
+    "reciprocal_rank": 1.0,
+    "correctness": 4.0,
+    "faithfulness": 4.0,
+    "retrieved_sources": [
+      "fastapi/en/tutorial/request-files.md",
+      "fastapi/zh/tutorial/request-files.md",
+      "fastapi/zh/tutorial/request-files.md",
+      "fastapi/zh/tutorial/request-files.md",
+      "fastapi/zh/tutorial/request-files.md"
+    ],
+    "answer_preview": "FastAPI recommends `UploadFile` over `bytes` for file uploads for several key reasons:\n\n**Memory Management**: `UploadFile` uses a \"spooled\" file, which stores files in memory up to a maximum size lim"
+  },
+  {
+    "question": "How do you declare a JSON request body in FastAPI?",
+    "category": "factual",
+    "answerable": true,
+    "hit": true,
+    "reciprocal_rank": 1.0,
+    "correctness": 3.0,
+    "faithfulness": 4.0,
+    "retrieved_sources": [
+      "fastapi/en/tutorial/body.md",
+      "fastapi/en/tutorial/request-files.md",
+      "fastapi/en/tutorial/request-forms.md",
+      "fastapi/en/tutorial/request-forms-and-files.md",
+      "fastapi/en/tutorial/request-files.md"
+    ],
+    "answer_preview": "To declare a JSON request body in FastAPI, you declare it as a parameter in your path operation function and specify its type as a model you've created.\n\nSpecifically, you \"declare it the same way you"
+  },
+  {
+    "question": "According to the FastAPI Docker guide, when should you run a single Uvicorn process per container versus multiple workers?",
+    "category": "factual",
+    "answerable": true,
+    "hit": true,
+    "reciprocal_rank": 0.5,
+    "correctness": 3.0,
+    "faithfulness": 4.0,
+    "retrieved_sources": [
+      "fastapi/zh/deployment/docker.md",
+      "fastapi/en/deployment/docker.md",
+      "fastapi/zh/deployment/server-workers.md",
+      "fastapi/en/deployment/docker.md",
+      "fastapi/en/deployment/docker.md"
+    ],
+    "answer_preview": "According to the FastAPI Docker guide:\n\n**Standard approach - Single Uvicorn process per container:** You should run a single Uvicorn process per container when you're using container orchestration sy"
+  },
+  {
+    "question": "What are the standalone-installer commands for installing uv?",
+    "category": "factual",
+    "answerable": true,
+    "hit": true,
+    "reciprocal_rank": 0.5,
+    "correctness": 3.0,
+    "faithfulness": 3.0,
+    "retrieved_sources": [
+      "uv/index.md",
+      "uv/getting-started/installation.md",
+      "uv/reference/storage.md",
+      "uv/getting-started/installation.md",
+      "uv/getting-started/first-steps.md"
+    ],
+    "answer_preview": "The standalone-installer commands for installing uv are [1]:\n\n**macOS and Linux:**\n```console\n$ curl -LsSf https://astral.sh/uv/install.sh | sh\n```\n\n**Windows:**\n```pwsh-session\nPS> powershell -Execut"
+  },
+  {
+    "question": "How do you clear uv's cache for one specific package only?",
+    "category": "factual",
+    "answerable": true,
+    "hit": true,
+    "reciprocal_rank": 1.0,
+    "correctness": 5.0,
+    "faithfulness": 5.0,
+    "retrieved_sources": [
+      "uv/concepts/cache.md",
+      "uv/concepts/cache.md",
+      "uv/concepts/cache.md",
+      "uv/concepts/cache.md",
+      "uv/concepts/cache.md"
+    ],
+    "answer_preview": "To clear uv's cache for a specific package only, run `uv cache clean <package-name>`. For example, `uv cache clean ruff` will clear the cache for the `ruff` package [3]."
+  },
+  {
+    "question": "How does uv cache Git dependencies?",
+    "category": "factual",
+    "answerable": true,
+    "hit": true,
+    "reciprocal_rank": 1.0,
+    "correctness": 5.0,
+    "faithfulness": 5.0,
+    "retrieved_sources": [
+      "uv/concepts/cache.md",
+      "uv/concepts/cache.md",
+      "uv/concepts/cache.md",
+      "uv/concepts/cache.md",
+      "uv/concepts/projects/sync.md"
+    ],
+    "answer_preview": "uv caches Git dependencies based on the **fully-resolved Git commit hash** [1]. When using `uv pip compile`, Git dependencies are pinned to a specific commit hash when the resolved dependency set is w"
+  },
+  {
+    "question": "What is the difference between direct and transitive dependencies in uv's resolution docs?",
+    "category": "factual",
+    "answerable": true,
+    "hit": true,
+    "reciprocal_rank": 1.0,
+    "correctness": 4.0,
+    "faithfulness": 2.0,
+    "retrieved_sources": [
+      "uv/concepts/resolution.md",
+      "uv/pip/compatibility.md",
+      "uv/reference/internals/resolver.md",
+      "uv/pip/compatibility.md",
+      "uv/pip/compatibility.md"
+    ],
+    "answer_preview": "Based on the provided passages:\n\n**Direct dependencies** are dependencies you specify directly in your requirements, while **transitive dependencies** (also called indirect dependencies) are dependenc"
+  },
+  {
+    "question": "Does uv require Python to be installed before it can work?",
+    "category": "factual",
+    "answerable": true,
+    "hit": false,
+    "reciprocal_rank": 0.0,
+    "correctness": 5.0,
+    "faithfulness": 5.0,
+    "retrieved_sources": [
+      "uv/guides/install-python.md",
+      "uv/guides/install-python.md",
+      "uv/guides/install-python.md",
+      "uv/guides/install-python.md",
+      "uv/pip/environments.md"
+    ],
+    "answer_preview": "No, uv does not require Python to be installed beforehand. \n\n[1] \"Python does not need to be explicitly installed to use uv. By default, uv will automatically download Python versions when they are re"
+  },
+  {
+    "question": "How can a single-file Python script declare its own dependencies for uv?",
+    "category": "factual",
+    "answerable": true,
+    "hit": true,
+    "reciprocal_rank": 1.0,
+    "correctness": 4.0,
+    "faithfulness": 4.0,
+    "retrieved_sources": [
+      "uv/guides/scripts.md",
+      "uv/guides/scripts.md",
+      "uv/guides/scripts.md",
+      "uv/concepts/projects/workspaces.md",
+      "uv/guides/integration/marimo.md"
+    ],
+    "answer_preview": "A single-file Python script can declare its own dependencies for uv using the **inline metadata format**. [1]\n\nTo add dependencies to your script, use the `uv add --script` command followed by the scr"
+  },
+  {
+    "question": "What does the uv sync command do to the project environment?",
+    "category": "factual",
+    "answerable": true,
+    "hit": true,
+    "reciprocal_rank": 0.3333333333333333,
+    "correctness": 4.0,
+    "faithfulness": 4.0,
+    "retrieved_sources": [
+      "uv/concepts/projects/layout.md",
+      "uv/concepts/projects/config.md",
+      "uv/concepts/projects/sync.md",
+      "uv/concepts/projects/config.md",
+      "uv/concepts/projects/sync.md"
+    ],
+    "answer_preview": "The `uv sync` command performs several operations on the project environment:\n\n1. **Creates or updates the environment**: It will create the project environment if it does not exist yet [1].\n\n2. **Ins"
+  },
+  {
+    "question": "In FastAPI, how does the framework decide whether a function parameter comes from the URL query string or from the request body?",
+    "category": "multihop",
+    "answerable": true,
+    "hit": true,
+    "reciprocal_rank": 1.0,
+    "correctness": 5.0,
+    "faithfulness": 5.0,
+    "retrieved_sources": [
+      "fastapi/en/tutorial/body.md",
+      "fastapi/zh/tutorial/body-multiple-params.md",
+      "fastapi/en/tutorial/body.md",
+      "fastapi/en/advanced/using-request-directly.md",
+      "fastapi/en/tutorial/dependencies/index.md"
+    ],
+    "answer_preview": "Based on the provided passages, FastAPI decides this based on the **type annotation** of the parameter:\n\n- **Pydantic models** are taken from the request body [1]\n- **Single values** (non-Pydantic typ"
+  },
+  {
+    "question": "How would you start the FastAPI dev server inside a uv-managed project environment?",
+    "category": "multihop",
+    "answerable": true,
+    "hit": true,
+    "reciprocal_rank": 0.25,
+    "correctness": 3.0,
+    "faithfulness": 4.0,
+    "retrieved_sources": [
+      "fastapi/en/index.md",
+      "fastapi/en/deployment/manually.md",
+      "fastapi/en/fastapi-cli.md",
+      "fastapi/en/tutorial/first-steps.md",
+      "uv/guides/integration/fastapi.md"
+    ],
+    "answer_preview": "To start the FastAPI dev server inside a uv-managed project environment, you would use:\n\n```console\n$ uv run fastapi dev\n```\n\n[5]\n\nAccording to the documentation, `uv run` will automatically resolve a"
+  },
+  {
+    "question": "Why is FastAPI's BackgroundTasks unsuitable for heavy CPU-bound jobs, and what does the documentation suggest instead?",
+    "category": "multihop",
+    "answerable": true,
+    "hit": true,
+    "reciprocal_rank": 0.2,
+    "correctness": 5.0,
+    "faithfulness": 4.0,
+    "retrieved_sources": [
+      "fastapi/zh/tutorial/background-tasks.md",
+      "fastapi/zh/tutorial/background-tasks.md",
+      "fastapi/en/release-notes.md",
+      "fastapi/zh/tutorial/background-tasks.md",
+      "fastapi/en/async.md"
+    ],
+    "answer_preview": "Based on the provided documentation:\n\nFastAPI's `BackgroundTasks` is unsuitable for heavy CPU-bound jobs because it runs tasks in the same process as your application. [1] explains that if you need to"
+  },
+  {
+    "question": "How does uv make repeated installs of the same Git dependency reproducible?",
+    "category": "multihop",
+    "answerable": true,
+    "hit": true,
+    "reciprocal_rank": 1.0,
+    "correctness": 1.0,
+    "faithfulness": 5.0,
+    "retrieved_sources": [
+      "uv/concepts/resolution.md",
+      "uv/pip/compile.md",
+      "uv/reference/troubleshooting/reproducible-examples.md",
+      "uv/reference/troubleshooting/build-failures.md",
+      "uv/concepts/resolution.md"
+    ],
+    "answer_preview": "I don't have information about that in the provided documents.\n\nThe passages discuss uv's reproducibility features like the `--exclude-newer` option [1][5] and the use of `uv pip sync` to ensure envir"
+  },
+  {
+    "question": "After installing uv on a fresh machine with no Python, what happens when you run a project command?",
+    "category": "multihop",
+    "answerable": true,
+    "hit": false,
+    "reciprocal_rank": 0.0,
+    "correctness": 5.0,
+    "faithfulness": 5.0,
+    "retrieved_sources": [
+      "uv/guides/integration/github.md",
+      "uv/pip/environments.md",
+      "uv/concepts/projects/run.md",
+      "uv/guides/package.md",
+      "uv/guides/install-python.md"
+    ],
+    "answer_preview": "Based on the provided documents, when you run a project command on a fresh machine with no Python after installing uv, **uv will download the latest version of Python on demand** [5].\n\nSpecifically, p"
+  },
+  {
+    "question": "What FastAPI mechanism are its security utilities built on top of?",
+    "category": "multihop",
+    "answerable": true,
+    "hit": true,
+    "reciprocal_rank": 0.25,
+    "correctness": 3.0,
+    "faithfulness": 4.0,
+    "retrieved_sources": [
+      "fastapi/en/tutorial/security/index.md",
+      "fastapi/en/alternatives.md",
+      "fastapi/zh/tutorial/security/index.md",
+      "fastapi/en/tutorial/security/first-steps.md",
+      "fastapi/en/tutorial/sql-databases.md"
+    ],
+    "answer_preview": "Based on the provided passages, FastAPI security utilities are built on top of two key mechanisms:\n\n1. **The dependency injection system**: Passage [2] mentions that FastAPI's security utilities are p"
+  },
+  {
+    "question": "Compare how path parameters and query parameters are validated in FastAPI.",
+    "category": "multihop",
+    "answerable": true,
+    "hit": true,
+    "reciprocal_rank": 0.25,
+    "correctness": 4.0,
+    "faithfulness": 4.0,
+    "retrieved_sources": [
+      "fastapi/en/tutorial/body.md",
+      "fastapi/zh/tutorial/query-params.md",
+      "fastapi/en/tutorial/path-params-numeric-validations.md",
+      "fastapi/en/tutorial/query-params.md",
+      "fastapi/en/advanced/using-request-directly.md"
+    ],
+    "answer_preview": "Based on the provided passages, here's what I can tell you about how FastAPI validates path and query parameters:\n\n**Similarities:**\nBoth path and query parameters use similar validation approaches in"
+  },
+  {
+    "question": "What did the 'Attention Is All You Need' paper remove from sequence transduction architectures, and what did it rely on instead?",
+    "category": "multihop",
+    "answerable": true,
+    "hit": true,
+    "reciprocal_rank": 1.0,
+    "correctness": 5.0,
+    "faithfulness": 5.0,
+    "retrieved_sources": [
+      "papers/attention-is-all-you-need.pdf",
+      "papers/attention-is-all-you-need.pdf",
+      "papers/retrieval-augmented-generation.pdf",
+      "papers/attention-is-all-you-need.pdf",
+      "papers/attention-is-all-you-need.pdf"
+    ],
+    "answer_preview": "According to the provided passages, the \"Attention Is All You Need\" paper removed **recurrent layers** from sequence transduction architectures. Specifically, it replaced \"the recurrent layers most co"
+  },
+  {
+    "question": "What two components does the original RAG paper combine, and what knowledge source does it retrieve from?",
+    "category": "multihop",
+    "answerable": true,
+    "hit": true,
+    "reciprocal_rank": 0.5,
+    "correctness": 2.0,
+    "faithfulness": 3.0,
+    "retrieved_sources": [
+      "papers/rag-for-llms-survey.pdf",
+      "papers/retrieval-augmented-generation.pdf",
+      "papers/rag-for-llms-survey.pdf",
+      "sample.md",
+      "papers/rag-for-llms-survey.pdf"
+    ],
+    "answer_preview": "Based on the provided passages:\n\nThe original RAG paper combines two components: **(i) a retriever** with parameters η that retrieves text documents, and **(ii) a generator** (implied from the generat"
+  },
+  {
+    "question": "What is the core idea of the ReAct paper?",
+    "category": "multihop",
+    "answerable": true,
+    "hit": true,
+    "reciprocal_rank": 1.0,
+    "correctness": 4.0,
+    "faithfulness": 3.0,
+    "retrieved_sources": [
+      "papers/react-reasoning-and-acting.pdf",
+      "papers/react-reasoning-and-acting.pdf",
+      "papers/react-reasoning-and-acting.pdf",
+      "papers/react-reasoning-and-acting.pdf",
+      "papers/react-reasoning-and-acting.pdf"
+    ],
+    "answer_preview": "The core idea of ReAct is to combine reasoning and acting in language models for general task solving. [4] Specifically, ReAct augments an agent's action space to include language-based thoughts or re"
+  },
+  {
+    "question": "FastAPI 中查询参数的默认值是怎么设置的？",
+    "category": "crosslingual",
+    "answerable": true,
+    "hit": true,
+    "reciprocal_rank": 1.0,
+    "correctness": 4.0,
+    "faithfulness": 4.0,
+    "retrieved_sources": [
+      "fastapi/zh/tutorial/query-params.md",
+      "fastapi/zh/tutorial/query-params-str-validations.md",
+      "fastapi/zh/tutorial/query-params-str-validations.md",
+      "fastapi/zh/tutorial/dependencies/classes-as-dependencies.md",
+      "fastapi/zh/tutorial/query-params-str-validations.md"
+    ],
+    "answer_preview": "# FastAPI 中查询参数的默认值设置\n\nFastAPI 中有以下几种方式设置查询参数的默认值：\n\n## 1. 直接赋值方式\n\n最简单的方式是直接在参数中使用 `=` 来赋值。例如，把默认值设为 `None` 即可声明可选的查询参数 [1]：\n\n```python\nq: str | None = None\n```\n\n这样 FastAPI 会因为默认值 `= None` 而知道 `q` 的值不是"
+  },
+  {
+    "question": "FastAPI 怎么处理浏览器跨域请求？",
+    "category": "crosslingual",
+    "answerable": true,
+    "hit": false,
+    "reciprocal_rank": 0.0,
+    "correctness": 1.0,
+    "faithfulness": 5.0,
+    "retrieved_sources": [
+      "fastapi/zh/advanced/strict-content-type.md",
+      "fastapi/zh/advanced/behind-a-proxy.md",
+      "fastapi/zh/advanced/wsgi.md",
+      "fastapi/zh/advanced/behind-a-proxy.md",
+      "fastapi/zh/tutorial/dependencies/index.md"
+    ],
+    "answer_preview": "I don't have information about that in the provided documents.\n\nThe passages provided cover strict Content-Type checking, proxy forwarded headers, WSGI integration, and dependencies in FastAPI, but th"
+  },
+  {
+    "question": "在 FastAPI 里如何向客户端返回自定义的 HTTP 错误？",
+    "category": "crosslingual",
+    "answerable": true,
+    "hit": true,
+    "reciprocal_rank": 1.0,
+    "correctness": 4.0,
+    "faithfulness": 5.0,
+    "retrieved_sources": [
+      "fastapi/en/tutorial/handling-errors.md",
+      "fastapi/zh/tutorial/handling-errors.md",
+      "fastapi/zh/how-to/authentication-error-status-code.md",
+      "fastapi/zh/tutorial/handling-errors.md",
+      "fastapi/zh/tutorial/handling-errors.md"
+    ],
+    "answer_preview": "在 FastAPI 里向客户端返回自定义的 HTTP 错误，主要使用 `HTTPException`。\n\n**基本方式：**\n\n使用 `HTTPException` 来返回 HTTP 错误响应 [2]。`HTTPException` 是一个常规的 Python 异常，因此需要 `raise` 而不是 `return` [2]。\n\n**自定义错误内容：**\n\n触发 `HTTPException` 时"
+  },
+  {
+    "question": "FastAPI 的后台任务功能怎么使用？",
+    "category": "crosslingual",
+    "answerable": true,
+    "hit": true,
+    "reciprocal_rank": 1.0,
+    "correctness": 2.0,
+    "faithfulness": 2.0,
+    "retrieved_sources": [
+      "fastapi/en/tutorial/background-tasks.md",
+      "fastapi/en/reference/background.md",
+      "fastapi/zh/tutorial/background-tasks.md",
+      "fastapi/zh/tutorial/background-tasks.md",
+      "fastapi/en/tutorial/background-tasks.md"
+    ],
+    "answer_preview": "# FastAPI 后台任务使用方法\n\n## 基本使用\n\n在 **FastAPI** 中使用后台任务的方法是在 *路径操作函数* 或依赖函数中声明一个类型为 `BackgroundTasks` 的参数 [2]。\n\n首先导入：[2]\n```python\nfrom fastapi import BackgroundTasks\n```\n\n## 核心特点\n\n1. **响应后执行**：你可以使用 `Back"
+  },
+  {
+    "question": "什么时候应该用 async def 定义路径操作函数，什么时候用普通 def？",
+    "category": "crosslingual",
+    "answerable": true,
+    "hit": true,
+    "reciprocal_rank": 1.0,
+    "correctness": 2.0,
+    "faithfulness": 2.0,
+    "retrieved_sources": [
+      "fastapi/zh/async.md",
+      "fastapi/zh/tutorial/dependencies/index.md",
+      "fastapi/en/async.md",
+      "fastapi/en/async.md",
+      "fastapi/en/async.md"
+    ],
+    "answer_preview": "根据提供的文档，关于何时使用 `async def` 和 `def` 定义路径操作函数的建议如下：\n\n**应该使用 `async def` 的情况：**\n如果你的路径操作函数只进行计算操作，不包含阻塞 I/O 代码，应该使用 `async def`。这样性能会更好 [1][3]。\n\n**应该使用普通 `def` 的情况：**\n如果你的路径操作函数内使用执行阻塞 I/O 的代码，应该使用普通 `de"
+  },
+  {
+    "question": "FastAPI 如何接收用户上传的文件？",
+    "category": "crosslingual",
+    "answerable": true,
+    "hit": true,
+    "reciprocal_rank": 1.0,
+    "correctness": 4.0,
+    "faithfulness": 5.0,
+    "retrieved_sources": [
+      "fastapi/zh/tutorial/request-files.md",
+      "fastapi/zh/tutorial/request-forms-and-files.md",
+      "fastapi/zh/tutorial/request-files.md",
+      "fastapi/zh/tutorial/request-files.md",
+      "fastapi/en/tutorial/request-files.md"
+    ],
+    "answer_preview": "FastAPI 接收用户上传文件的方式有以下几种：\n\n**基本机制：**\n文件作为「表单数据」上传 [1][3]。要接收上传的文件，需要先安装 [`python-multipart`](https://github.com/Kludex/python-multipart) [3]。\n\n**两种主要方式：**\n\n1. **使用 `bytes` 类型**：将路径操作函数参数的类型声明为 `bytes`"
+  },
+  {
+    "question": "FastAPI 的依赖注入系统是干什么用的？",
+    "category": "crosslingual",
+    "answerable": true,
+    "hit": true,
+    "reciprocal_rank": 1.0,
+    "correctness": 4.0,
+    "faithfulness": 5.0,
+    "retrieved_sources": [
+      "fastapi/zh/tutorial/dependencies/index.md",
+      "fastapi/en/tutorial/dependencies/index.md",
+      "fastapi/en/tutorial/dependencies/index.md",
+      "fastapi/zh/tutorial/dependencies/index.md",
+      "fastapi/zh/features.md"
+    ],
+    "answer_preview": "FastAPI 的依赖注入系统是用于：\n\n**基本用途：** 允许你的代码（路径操作函数）声明它需要使用的东西，然后由 FastAPI 负责为你的代码提供这些所需的依赖 [2][3]。\n\n**具体应用场景：** 当你需要以下内容时，依赖注入系统非常有用 [1]：\n* 共享业务逻辑（同一段代码逻辑反复复用）\n* 共享数据库连接\n* 实施安全、认证、角色权限等要求\n* 以及更多其他内容\n\n**主要特点"
+  },
+  {
+    "question": "如何在 FastAPI 中声明并校验 JSON 请求体？",
+    "category": "crosslingual",
+    "answerable": true,
+    "hit": true,
+    "reciprocal_rank": 1.0,
+    "correctness": 4.0,
+    "faithfulness": 5.0,
+    "retrieved_sources": [
+      "fastapi/zh/tutorial/body.md",
+      "fastapi/zh/tutorial/body-multiple-params.md",
+      "fastapi/zh/tutorial/body-multiple-params.md",
+      "fastapi/zh/tutorial/body-nested-models.md",
+      "fastapi/zh/tutorial/body-multiple-params.md"
+    ],
+    "answer_preview": "在 FastAPI 中声明并校验 JSON 请求体的方法如下：\n\n仅使用 Python 类型声明，**FastAPI** 就可以实现以下功能 [1]：\n\n* **以 JSON 形式读取请求体** - FastAPI 自动处理 JSON 解析\n* **数据类型转换** - 将请求体自动转换为对应的类型\n* **数据校验** - FastAPI 会校验数据，并在数据无效时返回清晰的错误信息，指出错误数"
+  },
+  {
+    "question": "写好第一个 FastAPI 应用后，用什么命令把它跑起来？",
+    "category": "crosslingual",
+    "answerable": true,
+    "hit": false,
+    "reciprocal_rank": 0.0,
+    "correctness": 5.0,
+    "faithfulness": 5.0,
+    "retrieved_sources": [
+      "fastapi/en/fastapi-cli.md",
+      "fastapi/zh/deployment/manually.md",
+      "fastapi/zh/index.md",
+      "fastapi/zh/fastapi-cli.md",
+      "fastapi/zh/tutorial/bigger-applications.md"
+    ],
+    "answer_preview": "用 `fastapi dev` 命令可以在开发环境中运行你的 FastAPI 应用：\n\n```console\n$ fastapi dev\n```\n\n[1][4]\n\n如果需要指定特定的应用文件，也可以传入路径：\n\n```console\n$ fastapi dev main.py\n```\n\n[5]\n\n如果要在生产环境中运行应用，则使用 `fastapi run` 命令：\n\n```console\n$ f"
+  },
+  {
+    "question": "FastAPI 路径参数的类型标注有什么作用？",
+    "category": "crosslingual",
+    "answerable": true,
+    "hit": true,
+    "reciprocal_rank": 0.3333333333333333,
+    "correctness": 1.0,
+    "faithfulness": 5.0,
+    "retrieved_sources": [
+      "fastapi/zh/tutorial/body.md",
+      "fastapi/zh/tutorial/query-params-str-validations.md",
+      "fastapi/zh/tutorial/path-params.md",
+      "fastapi/zh/tutorial/path-params-numeric-validations.md",
+      "fastapi/zh/tutorial/request-files.md"
+    ],
+    "answer_preview": "I don't have information about that in the provided documents.\n\n虽然段落 [4] 提到可以使用 `Path` 为路径参数声明校验和元数据，但提供的段落中没有明确说明路径参数类型标注本身具体有什么作用。"
+  },
+  {
+    "question": "它是在响应返回之前还是之后执行？",
+    "category": "followup",
+    "answerable": true,
+    "hit": true,
+    "reciprocal_rank": 0.3333333333333333,
+    "correctness": 5.0,
+    "faithfulness": 4.0,
+    "retrieved_sources": [
+      "fastapi/zh/advanced/advanced-dependencies.md",
+      "fastapi/en/reference/background.md",
+      "fastapi/zh/tutorial/background-tasks.md",
+      "fastapi/en/advanced/advanced-dependencies.md",
+      "fastapi/zh/tutorial/middleware.md"
+    ],
+    "answer_preview": "根据提供的文档，后台任务是**在响应返回之后**执行的。\n\n正如[3]中所说：\"你可以定义在返回响应后运行的后台任务。\"\n\n这意味着：\n1. FastAPI 先生成响应并立即返回给客户端\n2. 之后才在后台执行你通过 `BackgroundTasks.add_task()` 注册的任务\n\n这个设计的好处是[3]中提到的场景，比如发送电子邮件通知时，不需要让客户端等待邮件服务完成就可以立即返回响应。"
+  },
+  {
+    "question": "那怎么只针对某一个包做这件事？",
+    "category": "followup",
+    "answerable": true,
+    "hit": true,
+    "reciprocal_rank": 1.0,
+    "correctness": 5.0,
+    "faithfulness": 5.0,
+    "retrieved_sources": [
+      "uv/concepts/cache.md",
+      "uv/concepts/cache.md",
+      "uv/concepts/cache.md",
+      "uv/concepts/cache.md",
+      "uv/guides/integration/github.md"
+    ],
+    "answer_preview": "可以使用 `uv cache clean <package-name>` 针对特定的包清空缓存 [1]。\n\n例如，`uv cache clean ruff` 会清空 `ruff` 包的缓存 [1]。"
+  },
+  {
+    "question": "用通配符的方式有什么限制？",
+    "category": "followup",
+    "answerable": true,
+    "hit": true,
+    "reciprocal_rank": 1.0,
+    "correctness": 5.0,
+    "faithfulness": 4.0,
+    "retrieved_sources": [
+      "fastapi/zh/tutorial/cors.md",
+      "fastapi/zh/tutorial/cors.md",
+      "fastapi/zh/tutorial/cors.md",
+      "fastapi/en/tutorial/cors.md",
+      "fastapi/zh/tutorial/cors.md"
+    ],
+    "answer_preview": "使用通配符 `\"*\"` 有两个主要限制：\n\n1. **不支持凭据相关的通信**：通配符仅允许某些类型的通信，不包括所有涉及凭据的内容，比如 Cookies 和使用 Bearer 令牌的 Authorization 请求头等 [1]。\n\n2. **与凭据认证不兼容**：当 `allow_credentials` 设为 `True` 时，`allow_origins`、`allow_methods` "
+  },
+  {
+    "question": "它比直接用 bytes 接收好在哪里？",
+    "category": "followup",
+    "answerable": true,
+    "hit": true,
+    "reciprocal_rank": 1.0,
+    "correctness": 5.0,
+    "faithfulness": 5.0,
+    "retrieved_sources": [
+      "fastapi/zh/tutorial/request-files.md",
+      "fastapi/en/tutorial/request-files.md",
+      "fastapi/zh/tutorial/request-files.md",
+      "fastapi/zh/tutorial/request-files.md",
+      "fastapi/zh/tutorial/request-files.md"
+    ],
+    "answer_preview": "`UploadFile` 相比 `bytes` 有多项优势 [1]：\n\n* **智能存储管理**：使用\"spooled\"文件机制，文件会先存储在内存中，直到达到最大上限，超过该上限后会写入磁盘。因此非常适合处理图像、视频、大型二进制等大文件，而不会占用所有内存 [1]\n\n* **无需显式声明 File()**：不需要在参数的默认值中使用 `File()` [1]\n\n* **获取文件元数据**：你可"
+  },
+  {
+    "question": "如果机器上没装它会怎么样？",
+    "category": "followup",
+    "answerable": true,
+    "hit": false,
+    "reciprocal_rank": 0.0,
+    "correctness": 5.0,
+    "faithfulness": 5.0,
+    "retrieved_sources": [
+      "uv/guides/install-python.md",
+      "uv/guides/scripts.md",
+      "uv/guides/install-python.md",
+      "uv/guides/install-python.md",
+      "uv/pip/compatibility.md"
+    ],
+    "answer_preview": "如果机器上没有安装 Python，uv 会自动下载并安装所需的 Python 版本。\n\n根据文档：\n\n- `uv run` 会搜索并使用所需的 Python 版本。如果该版本未安装，uv 会自动下载它[2]\n\n- uv 可以自动安装缺失的 Python 版本，\"你不需要安装 Python 就可以开始使用\"[3]\n\n- 即使没有指定 Python 版本，uv 也会按需下载最新版本。例如，如果系统中没"
+  },
+  {
+    "question": "Django 的 ORM 怎么定义数据模型？",
+    "category": "unanswerable",
+    "answerable": false,
+    "hit": false,
+    "reciprocal_rank": 0.0,
+    "correctness": 5.0,
+    "faithfulness": 5.0,
+    "retrieved_sources": [
+      "fastapi/en/features.md",
+      "fastapi/zh/tutorial/first-steps.md",
+      "fastapi/en/project-generation.md",
+      "fastapi/zh/tutorial/sql-databases.md",
+      "fastapi/en/release-notes.md"
+    ],
+    "answer_preview": "I don't have information about that in the provided documents.\n\nThe context passages provided focus on FastAPI, Pydantic, and SQLModel for data modeling and database interactions. They do not contain "
+  },
+  {
+    "question": "Kubernetes 里 Pod 和 Deployment 有什么区别？",
+    "category": "unanswerable",
+    "answerable": false,
+    "hit": false,
+    "reciprocal_rank": 0.0,
+    "correctness": 5.0,
+    "faithfulness": 5.0,
+    "retrieved_sources": [
+      "fastapi/zh/deployment/index.md",
+      "fastapi/zh/deployment/docker.md",
+      "fastapi/en/deployment/concepts.md",
+      "fastapi/zh/deployment/concepts.md",
+      "fastapi/en/deployment/index.md"
+    ],
+    "answer_preview": "I don't have information about that in the provided documents.\n\nThe provided passages discuss FastAPI deployment strategies and concepts, with only a brief mention of Kubernetes Init Containers [2], b"
+  },
+  {
+    "question": "PyTorch 的 autograd 是怎么实现反向传播的？",
+    "category": "unanswerable",
+    "answerable": false,
+    "hit": false,
+    "reciprocal_rank": 0.0,
+    "correctness": 5.0,
+    "faithfulness": 5.0,
+    "retrieved_sources": [
+      "uv/guides/integration/pytorch.md",
+      "uv/concepts/projects/config.md",
+      "uv/concepts/indexes.md",
+      "uv/concepts/projects/dependencies.md",
+      "uv/concepts/indexes.md"
+    ],
+    "answer_preview": "I don't have information about that in the provided documents.\n\nThe context passages provided focus on how to install and configure PyTorch using the `uv` package manager, not on PyTorch's autograd im"
+  },
+  {
+    "question": "React 的 useState 钩子怎么用？",
+    "category": "unanswerable",
+    "answerable": false,
+    "hit": false,
+    "reciprocal_rank": 0.0,
+    "correctness": 5.0,
+    "faithfulness": 5.0,
+    "retrieved_sources": [
+      "fastapi/zh/advanced/openapi-webhooks.md",
+      "fastapi/zh/advanced/response-change-status-code.md",
+      "fastapi/zh/advanced/additional-responses.md",
+      "fastapi/zh/advanced/response-change-status-code.md",
+      "fastapi/zh/advanced/openapi-webhooks.md"
+    ],
+    "answer_preview": "I don't have information about that in the provided documents.\n\nThe context passages provided contain only FastAPI documentation in Chinese, covering topics like webhooks, response status codes, and O"
+  },
+  {
+    "question": "Rust 的所有权机制是怎么保证内存安全的？",
+    "category": "unanswerable",
+    "answerable": false,
+    "hit": false,
+    "reciprocal_rank": 0.0,
+    "correctness": 5.0,
+    "faithfulness": 5.0,
+    "retrieved_sources": [
+      "uv/concepts/authentication/certificates.md",
+      "fastapi/zh/tutorial/security/first-steps.md",
+      "uv/reference/policies/versioning.md",
+      "fastapi/zh/tutorial/security/get-current-user.md",
+      "fastapi/zh/deployment/docker.md"
+    ],
+    "answer_preview": "I don't have information about that in the provided documents.\n\nThe context passages discuss uv's use of rustls (which is described as \"a memory-safe TLS implementation written in Rust\" [1]), but they"
+  }
+]
