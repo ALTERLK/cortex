@@ -61,6 +61,16 @@ class IngestRequest(BaseModel):
     overlap: int = Field(default=50, ge=0, le=400)
 
 
-class IngestResponse(BaseModel):
-    chunks_stored: int
-    latency_ms: float
+class IngestAccepted(BaseModel):
+    """202 response: the ingest job was started, poll /ingest/{job_id}."""
+
+    job_id: str
+    status: Literal["running"]
+
+
+class IngestStatus(BaseModel):
+    status: Literal["running", "done", "failed"]
+    directory: str
+    chunks_stored: int | None = None
+    latency_ms: float | None = None
+    error: str | None = None

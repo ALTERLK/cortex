@@ -31,6 +31,12 @@ class Settings(BaseSettings):
     # Override to redirect HuggingFace downloads away from the default C: cache.
     hf_home: str = ""
 
+    # --- API ---
+    # Comma-separated roots that /ingest is allowed to read. Anything outside
+    # is rejected — otherwise a public deployment would let anyone index (and
+    # then query) arbitrary server files.
+    ingest_dirs: str = "docs,corpus"
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

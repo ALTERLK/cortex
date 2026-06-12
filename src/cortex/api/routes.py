@@ -1,9 +1,11 @@
 """API route handlers.
 
-Three endpoints:
-  GET  /health   — liveness probe; no dependencies
-  POST /ask      — RAG query: retrieves passages, generates a cited answer
-  POST /ingest   — ingest a directory of documents into the vector store
+Endpoints:
+  GET  /health            — liveness probe; no dependencies
+  POST /ask               — RAG/agent query with a cited answer
+  POST /ask/stream        — same, as Server-Sent Events
+  POST /ingest            — start a background ingest job (202 + job_id)
+  GET  /ingest/{job_id}   — poll ingest job status
 """
 
 from __future__ import annotations
@@ -11,21 +13,24 @@ from __future__ import annotations
 import json
 import logging
 import time
+import uuid
 from collections.abc import Iterator
 from pathlib import Path
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, BackgroundTasks, HTTPException, Request
 from fastapi.responses import StreamingResponse
 
 from cortex.agent.loop import ToolCallRecord
 from cortex.api.schemas import (
     AskRequest,
     AskResponse,
+    IngestAccepted,
     IngestRequest,
-    IngestResponse,
+    IngestStatus,
     SourceRef,
     ToolCallView,
 )
+from cortex.config import get_settings
 from cortex.ingest.pipeline import ingest_directory
 from cortex.llm.postprocess import ThinkingStreamFilter, strip_thinking
 from cortex.rag.generator import GeneratorResponse
@@ -204,28 +209,69 @@ def ask_stream(body: AskRequest, request: Request) -> StreamingResponse:
     return StreamingResponse(events, media_type="text/event-stream")
 
 
-@router.post("/ingest", response_model=IngestResponse)
-def ingest(body: IngestRequest, request: Request) -> IngestResponse:
-    directory = Path(body.directory)
+# In-memory job table. Survives only the process lifetime — acceptable for a
+# single-instance service; a multi-instance deployment would move this to Redis.
+_INGEST_JOBS: dict[str, dict] = {}
+
+
+def _allowed_ingest_roots() -> list[Path]:
+    dirs = get_settings().ingest_dirs.split(",")
+    return [Path(d.strip()).resolve() for d in dirs if d.strip()]
+
+
+def _run_ingest_job(job_id: str, directory: Path, store: object, embedder: object,
+                    chunk_size: int, overlap: int) -> None:
+    t0 = time.perf_counter()
+    try:
+        n = ingest_directory(
+            directory, store, embedder,
+            chunk_size=chunk_size, overlap=overlap, verbose=False,
+        )
+        latency_ms = round((time.perf_counter() - t0) * 1000, 1)
+        _INGEST_JOBS[job_id].update(status="done", chunks_stored=n, latency_ms=latency_ms)
+        logger.info(json.dumps({
+            "event": "ingest", "job_id": job_id, "directory": str(directory),
+            "chunks_stored": n, "latency_ms": latency_ms,
+        }))
+    except Exception as exc:  # noqa: BLE001 — job must record any failure
+        _INGEST_JOBS[job_id].update(status="failed", error=str(exc))
+        logger.error(json.dumps({"event": "ingest_failed", "job_id": job_id, "error": str(exc)}))
+
+
+@router.post("/ingest", response_model=IngestAccepted, status_code=202)
+def ingest(body: IngestRequest, request: Request, background: BackgroundTasks) -> IngestAccepted:
+    """Start an ingest job in the background; poll GET /ingest/{job_id}.
+
+    NOTE (learning): ingest can take minutes (embedding is the bottleneck).
+    Holding an HTTP request open that long invites client timeouts — the
+    202 Accepted + status-poll pattern is the standard answer.
+    """
+    directory = Path(body.directory).resolve()
+    roots = _allowed_ingest_roots()
+    # Security: only allowlisted roots may be indexed. Without this, anyone
+    # who can reach the API could index arbitrary server files and then read
+    # them back through /ask.
+    if not any(directory == root or directory.is_relative_to(root) for root in roots):
+        raise HTTPException(
+            status_code=403,
+            detail=f"Directory not in the ingest allowlist ({get_settings().ingest_dirs})",
+        )
     if not directory.exists():
         raise HTTPException(status_code=400, detail=f"Directory not found: {directory}")
 
-    t0 = time.perf_counter()
-    n = ingest_directory(
-        directory,
-        request.app.state.store,
-        request.app.state.embedder,
-        chunk_size=body.chunk_size,
-        overlap=body.overlap,
-        verbose=False,
+    job_id = uuid.uuid4().hex
+    _INGEST_JOBS[job_id] = {"status": "running", "directory": str(directory)}
+    background.add_task(
+        _run_ingest_job, job_id, directory,
+        request.app.state.store, request.app.state.embedder,
+        body.chunk_size, body.overlap,
     )
-    latency_ms = round((time.perf_counter() - t0) * 1000, 1)
+    return IngestAccepted(job_id=job_id, status="running")
 
-    logger.info(json.dumps({
-        "event": "ingest",
-        "directory": str(directory),
-        "chunks_stored": n,
-        "latency_ms": latency_ms,
-    }))
 
-    return IngestResponse(chunks_stored=n, latency_ms=latency_ms)
+@router.get("/ingest/{job_id}", response_model=IngestStatus)
+def ingest_status(job_id: str) -> IngestStatus:
+    job = _INGEST_JOBS.get(job_id)
+    if job is None:
+        raise HTTPException(status_code=404, detail=f"Unknown ingest job: {job_id}")
+    return IngestStatus(**job)

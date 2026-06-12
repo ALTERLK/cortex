@@ -118,6 +118,61 @@ class VectorStore:
         """Return the total number of stored vectors."""
         return self._client.count(collection_name=COLLECTION_NAME).count
 
+    def list_sources(self) -> list[str]:
+        """Return the distinct source filenames in the collection.
+
+        NOTE (learning): scroll() pages through points WITHOUT a similarity
+        query — the right tool for "give me everything". The previous
+        implementation searched with a zero vector, which silently broke
+        beyond its top_k limit.
+        """
+        sources: set[str] = set()
+        offset = None
+        while True:
+            points, offset = self._client.scroll(
+                collection_name=COLLECTION_NAME,
+                limit=256,
+                offset=offset,
+                with_payload=["source"],
+                with_vectors=False,
+            )
+            sources.update(p.payload.get("source", "") for p in points)
+            if offset is None:
+                break
+        sources.discard("")
+        return sorted(sources)
+
+    def get_file_hash(self, source: str) -> str | None:
+        """Return the stored content hash for *source*, or None if absent."""
+        from qdrant_client.models import FieldCondition, Filter, MatchValue
+
+        points, _ = self._client.scroll(
+            collection_name=COLLECTION_NAME,
+            scroll_filter=Filter(must=[FieldCondition(key="source", match=MatchValue(value=source))]),
+            limit=1,
+            with_payload=["file_hash"],
+            with_vectors=False,
+        )
+        if not points:
+            return None
+        return points[0].payload.get("file_hash")
+
+    def delete_source(self, source: str) -> None:
+        """Delete every chunk belonging to *source*.
+
+        NOTE (learning): required for correct re-ingest — if a file shrinks
+        from 10 chunks to 6, idempotent upserts alone would leave chunks 7-10
+        stale in the index. Delete-then-write keeps the index exact.
+        """
+        from qdrant_client.models import FieldCondition, Filter, FilterSelector, MatchValue
+
+        self._client.delete(
+            collection_name=COLLECTION_NAME,
+            points_selector=FilterSelector(
+                filter=Filter(must=[FieldCondition(key="source", match=MatchValue(value=source))])
+            ),
+        )
+
 
 # ---------------------------------------------------------------------------
 # Helpers

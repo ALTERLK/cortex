@@ -105,6 +105,15 @@ class _FakeStore:
     def count(self) -> int:
         return 0
 
+    def get_file_hash(self, source: str) -> str | None:
+        return None  # nothing ingested yet — every file looks new
+
+    def delete_source(self, source: str) -> None:
+        pass
+
+    def list_sources(self) -> list[str]:
+        return []
+
 
 # ---------------------------------------------------------------------------
 # Fixture: replace lifespan so no real models load
@@ -353,25 +362,40 @@ def test_stream_done_carries_stats(client: TestClient) -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_ingest_nonexistent_directory_is_400(client: TestClient) -> None:
-    resp = client.post("/ingest", json={"directory": "does_not_exist_xyz"})
+def test_ingest_outside_allowlist_is_403(client: TestClient, tmp_path) -> None:
+    # tmp_path is outside the configured ingest roots (docs, corpus).
+    (tmp_path / "hello.txt").write_text("Should never be indexed.")
+    resp = client.post("/ingest", json={"directory": str(tmp_path)})
+    assert resp.status_code == 403
+    assert "allowlist" in resp.json()["detail"].lower()
+
+
+def test_ingest_nonexistent_subdir_is_400(client: TestClient) -> None:
+    # Inside the allowlist root but does not exist.
+    resp = client.post("/ingest", json={"directory": "docs/does_not_exist_xyz"})
     assert resp.status_code == 400
     assert "not found" in resp.json()["detail"].lower()
 
 
-def test_ingest_existing_directory(client: TestClient, tmp_path) -> None:
-    (tmp_path / "hello.txt").write_text("Hello world, this is a test document.")
-    resp = client.post("/ingest", json={"directory": str(tmp_path)})
-    assert resp.status_code == 200
-    data = resp.json()
-    assert data["chunks_stored"] >= 0
+def test_ingest_returns_202_and_job_completes(client: TestClient) -> None:
+    resp = client.post("/ingest", json={"directory": "docs"})
+    assert resp.status_code == 202
+    job_id = resp.json()["job_id"]
+    assert resp.json()["status"] == "running"
+
+    # NOTE: TestClient runs BackgroundTasks synchronously on response exit,
+    # so by the time we poll, the job has already finished.
+    status = client.get(f"/ingest/{job_id}")
+    assert status.status_code == 200
+    data = status.json()
+    assert data["status"] == "done"
+    assert data["chunks_stored"] >= 1
     assert data["latency_ms"] >= 0.0
 
 
-def test_ingest_response_has_required_fields(client: TestClient, tmp_path) -> None:
-    resp = client.post("/ingest", json={"directory": str(tmp_path)})
-    assert resp.status_code == 200
-    assert set(resp.json().keys()) == {"chunks_stored", "latency_ms"}
+def test_ingest_unknown_job_is_404(client: TestClient) -> None:
+    resp = client.get("/ingest/nope")
+    assert resp.status_code == 404
 
 
 # ---------------------------------------------------------------------------

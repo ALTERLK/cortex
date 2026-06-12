@@ -82,13 +82,7 @@ class ToolExecutor:
         return _format_search_results(results)
 
     def _list_documents(self) -> str:
-        # NOTE (learning): we derive the document list from the retriever's
-        # store by doing a broad search.  A production system would have a
-        # dedicated metadata index; this is good enough for Phase 1.
-        results = self._retriever._store.search(
-            [0.0] * 1024, top_k=100  # zero vector — returns arbitrary chunks
-        )
-        sources = sorted({r.source for r in results})
+        sources = self._retriever._store.list_sources()
         if not sources:
             return "[Knowledge base is empty]"
         return "Available documents:\n" + "\n".join(f"- {s}" for s in sources)
