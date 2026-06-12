@@ -1,102 +1,327 @@
 [
   {
-    "question": "What problem does RAG solve compared to using an LLM alone?",
-    "expected_answer": "RAG prevents hallucination by grounding the LLM in retrieved source passages instead of relying solely on knowledge baked into model weights during training.",
-    "expected_sources": ["sample.md"]
+    "question": "What does using a wildcard \"*\" for allowed origins in CORS prevent you from doing?",
+    "expected_answer": "A wildcard allows all origins but excludes anything involving credentials: cookies, Authorization headers like Bearer tokens, etc. To support credentials you must list the origins explicitly.",
+    "expected_sources": ["fastapi/en/tutorial/cors.md"],
+    "category": "factual"
   },
   {
-    "question": "What are the six stages of a minimal RAG pipeline?",
-    "expected_answer": "Loading, chunking, embedding, indexing, retrieval, and generation.",
-    "expected_sources": ["sample.md"]
+    "question": "Which three components together define an 'origin' in the context of CORS?",
+    "expected_answer": "The combination of protocol (http/https), domain, and port. Two URLs on localhost with different ports are different origins.",
+    "expected_sources": ["fastapi/en/tutorial/cors.md"],
+    "category": "factual"
   },
   {
-    "question": "What is the purpose of overlap in chunking?",
-    "expected_answer": "Overlap carries the tail of one chunk into the head of the next, ensuring complete sentences are preserved in at least one chunk even if they straddle a boundary.",
-    "expected_sources": ["sample.md"]
+    "question": "How do you schedule work to run after returning a response in FastAPI?",
+    "expected_answer": "Declare a parameter of type BackgroundTasks in the path operation function, then call .add_task(func, *args, **kwargs) on it; the task runs after the response is sent.",
+    "expected_sources": ["fastapi/en/tutorial/background-tasks.md"],
+    "category": "factual"
   },
   {
-    "question": "What does hit-rate@k measure in RAG evaluation?",
-    "expected_answer": "Whether any of the top-k retrieved chunks come from the expected source document for a given question.",
-    "expected_sources": ["sample.md"]
+    "question": "What command does the FastAPI tutorial use to launch the development server?",
+    "expected_answer": "fastapi dev main.py — it starts a local dev server with auto-reload (using Uvicorn under the hood).",
+    "expected_sources": ["fastapi/en/tutorial/first-steps.md"],
+    "category": "factual"
   },
   {
-    "question": "What is LLM-as-judge in the context of RAG evaluation?",
-    "expected_answer": "An LLM that scores generated answers for correctness and citation faithfulness on a held-out question set.",
-    "expected_sources": ["sample.md"]
+    "question": "In FastAPI, what happens to function parameters that are not part of the path?",
+    "expected_answer": "They are automatically interpreted as query parameters (the key=value pairs after ? in the URL).",
+    "expected_sources": ["fastapi/en/tutorial/query-params.md"],
+    "category": "factual"
   },
   {
-    "question": "What approximate nearest-neighbor index algorithm does Qdrant use?",
-    "expected_answer": "HNSW (Hierarchical Navigable Small World).",
-    "expected_sources": ["sample.md"]
+    "question": "What benefit do you get from declaring a type annotation on a FastAPI path parameter?",
+    "expected_answer": "Automatic request parsing/conversion, data validation with clear errors, editor support, and automatic API documentation.",
+    "expected_sources": ["fastapi/en/tutorial/path-params.md"],
+    "category": "factual"
   },
   {
-    "question": "What is recursive character splitting and how does it work?",
-    "expected_answer": "A chunking strategy that tries separators in priority order — paragraph breaks, then line breaks, then spaces, then individual characters — falling back to finer splits only when necessary.",
-    "expected_sources": ["sample.md"]
+    "question": "When should a FastAPI path operation be declared with plain def instead of async def?",
+    "expected_answer": "When it calls blocking / third-party libraries that don't support await (e.g. most DB clients). FastAPI runs plain-def operations in an external threadpool so they don't block the event loop.",
+    "expected_sources": ["fastapi/en/async.md"],
+    "category": "factual"
   },
   {
-    "question": "Why is the evaluation loop described as the most important engineering asset in a RAG system?",
-    "expected_answer": "Without it, changes to chunk size, embedding model, or retrieval depth are guesswork. With it, every parameter becomes a measurable experiment.",
-    "expected_sources": ["sample.md"]
+    "question": "How is a dependency declared in FastAPI's dependency injection system?",
+    "expected_answer": "Add a parameter with Depends(some_callable): the callable (function taking the same style of parameters) is executed and its result is injected. Dependencies can themselves have dependencies.",
+    "expected_sources": ["fastapi/en/tutorial/dependencies/index.md"],
+    "category": "factual"
   },
   {
-    "question": "How does chunk size affect retrieval precision and context quality?",
-    "expected_answer": "Smaller chunks improve retrieval precision but lose surrounding context; larger chunks preserve context but dilute the relevance signal. Chunk size is a hyperparameter tuned against an evaluation set.",
-    "expected_sources": ["sample.md"]
+    "question": "What does the tokenUrl parameter of OAuth2PasswordBearer declare?",
+    "expected_answer": "The URL the client should use to send the username/password and obtain the token (it doesn't create that endpoint, just declares where it is).",
+    "expected_sources": ["fastapi/en/tutorial/security/first-steps.md"],
+    "category": "factual"
   },
   {
-    "question": "What is MRR (Mean Reciprocal Rank) and what does it measure?",
-    "expected_answer": "MRR is the mean of 1/rank-of-first-relevant-chunk across all questions. It measures how early the relevant chunk appears in the retrieved results.",
-    "expected_sources": ["sample.md"]
+    "question": "How do you return an HTTP error such as 404 to the client in FastAPI?",
+    "expected_answer": "Raise HTTPException(status_code=404, detail=\"...\") rather than returning it — raising means it also works from inside dependencies or deeper code.",
+    "expected_sources": ["fastapi/en/tutorial/handling-errors.md"],
+    "category": "factual"
   },
   {
-    "question": "Why was LangChain not used in Phase 1 of Cortex?",
-    "expected_answer": "The agent loop, retrieval, and prompting are hand-written so every design is explainable in depth. LangGraph enters in Phase 2 where orchestration genuinely needs a framework.",
-    "expected_sources": ["decisions.md"]
+    "question": "Why does FastAPI recommend UploadFile over bytes for file uploads?",
+    "expected_answer": "UploadFile uses a spooled file (memory up to a limit, then disk) so large files don't exhaust memory, exposes async read/write methods, and carries metadata like filename and content type.",
+    "expected_sources": ["fastapi/en/tutorial/request-files.md"],
+    "category": "factual"
   },
   {
-    "question": "Why was Python Protocol chosen over ABC for the LLM interface?",
-    "expected_answer": "Structural typing means tests can use a plain fake class with no inheritance; production adapters stay decoupled.",
-    "expected_sources": ["decisions.md"]
+    "question": "How do you declare a JSON request body in FastAPI?",
+    "expected_answer": "Define a class inheriting from Pydantic's BaseModel with typed attributes and declare it as a function parameter; FastAPI reads, validates and converts the JSON body into that model.",
+    "expected_sources": ["fastapi/en/tutorial/body.md"],
+    "category": "factual"
   },
   {
-    "question": "What is the benefit of idempotent upserts in the Cortex vector store?",
-    "expected_answer": "Re-ingesting the same file updates existing vectors instead of creating duplicates, because each chunk ID is a deterministic UUID derived from its source filename and chunk index.",
-    "expected_sources": ["decisions.md"]
+    "question": "According to the FastAPI Docker guide, when should you run a single Uvicorn process per container versus multiple workers?",
+    "expected_answer": "If a cluster (e.g. Kubernetes) handles replication at the cluster level, run one Uvicorn process per container; on a single server you can use multiple worker processes (e.g. --workers) inside the container.",
+    "expected_sources": ["fastapi/en/deployment/docker.md"],
+    "category": "factual"
   },
   {
-    "question": "What does the max-iterations guard protect against in the agent loop?",
-    "expected_answer": "A hallucinating or confused LLM calling tools forever. It is the minimum viable safety mechanism for the agentic loop.",
-    "expected_sources": ["decisions.md"]
+    "question": "What are the standalone-installer commands for installing uv?",
+    "expected_answer": "curl -LsSf https://astral.sh/uv/install.sh | sh on macOS/Linux, and a powershell irm ... install.ps1 | iex command on Windows; uv can also be installed via pip or pipx.",
+    "expected_sources": ["uv/getting-started/installation.md"],
+    "category": "factual"
   },
   {
-    "question": "Why is temperature set low for the RAG generator?",
-    "expected_answer": "Factual grounded answers benefit from low temperature; creativity is not a goal when the task is summarising retrieved passages.",
-    "expected_sources": ["decisions.md"]
+    "question": "How do you clear uv's cache for one specific package only?",
+    "expected_answer": "Run uv cache clean <package-name>, e.g. uv cache clean ruff.",
+    "expected_sources": ["uv/concepts/cache.md"],
+    "category": "factual"
   },
   {
-    "question": "What is the acceptance criterion for milestone M5?",
-    "expected_answer": "The eval command outputs a scored report and baseline numbers are recorded.",
-    "expected_sources": ["roadmap.md"]
+    "question": "How does uv cache Git dependencies?",
+    "expected_answer": "Based on the fully-resolved Git commit hash; uv pip compile pins Git dependencies to a specific commit when writing the resolved set.",
+    "expected_sources": ["uv/concepts/cache.md"],
+    "category": "factual"
   },
   {
-    "question": "What Phase 2 direction in the Cortex roadmap introduces LangGraph?",
-    "expected_answer": "P2-C: multi-agent orchestration with router, retrieval, and synthesis agents using LangGraph.",
-    "expected_sources": ["roadmap.md"]
+    "question": "What is the difference between direct and transitive dependencies in uv's resolution docs?",
+    "expected_answer": "Direct dependencies are those declared by the current project; transitive (indirect) dependencies are those pulled in by the project's dependencies.",
+    "expected_sources": ["uv/concepts/resolution.md"],
+    "category": "factual"
   },
   {
-    "question": "What does P2-A (adaptive retrieval) include in the Cortex roadmap?",
-    "expected_answer": "Query rewriting, hybrid search (dense + sparse), bge-reranker reranking, and LLM-made retrieval plans.",
-    "expected_sources": ["roadmap.md"]
+    "question": "Does uv require Python to be installed before it can work?",
+    "expected_answer": "No — uv can automatically download and manage Python versions itself when a required interpreter is missing.",
+    "expected_sources": ["uv/concepts/python-versions.md"],
+    "category": "factual"
   },
   {
-    "question": "What embedding model does Cortex use and why was it chosen?",
-    "expected_answer": "BGE-M3, because it is multilingual (Chinese and English), runs locally with no API cost, and produces 1024-dimensional vectors.",
-    "expected_sources": ["decisions.md"]
+    "question": "How can a single-file Python script declare its own dependencies for uv?",
+    "expected_answer": "With inline script metadata — a # /// script ... # /// comment block (managed by uv add --script) listing dependencies; uv run script.py then creates an environment with them on the fly.",
+    "expected_sources": ["uv/guides/scripts.md"],
+    "category": "factual"
   },
   {
-    "question": "What format does the Cortex generator use to cite sources in its answers?",
-    "expected_answer": "Numbered inline citations in square brackets, such as [1] or [2][3], referencing the numbered context passages provided in the prompt.",
-    "expected_sources": ["decisions.md"]
+    "question": "What does the uv sync command do to the project environment?",
+    "expected_answer": "It makes the environment exactly match the lockfile: installing missing packages and removing ones not in the lock (unless flags like --inexact are used).",
+    "expected_sources": ["uv/concepts/projects/sync.md"],
+    "category": "factual"
+  },
+  {
+    "question": "In FastAPI, how does the framework decide whether a function parameter comes from the URL query string or from the request body?",
+    "expected_answer": "Parameters matching path variables come from the path; singular-typed parameters (int, str…) become query parameters; parameters typed as Pydantic models are read from the request body.",
+    "expected_sources": ["fastapi/en/tutorial/query-params.md", "fastapi/en/tutorial/body.md"],
+    "category": "multihop"
+  },
+  {
+    "question": "How would you start the FastAPI dev server inside a uv-managed project environment?",
+    "expected_answer": "Use uv run to execute inside the project environment: uv run fastapi dev main.py (uv resolves/installs the env, then runs the command).",
+    "expected_sources": ["fastapi/en/tutorial/first-steps.md", "uv/guides/scripts.md"],
+    "category": "multihop"
+  },
+  {
+    "question": "Why is FastAPI's BackgroundTasks unsuitable for heavy CPU-bound jobs, and what does the documentation suggest instead?",
+    "expected_answer": "BackgroundTasks runs in the same process/event loop as the app, so heavy computation would compete with request handling; the docs suggest bigger tools like Celery for heavy background computation.",
+    "expected_sources": ["fastapi/en/tutorial/background-tasks.md", "fastapi/en/async.md"],
+    "category": "multihop"
+  },
+  {
+    "question": "How does uv make repeated installs of the same Git dependency reproducible?",
+    "expected_answer": "Resolution pins the Git dependency to a fully-resolved commit hash (recorded in the lock / compiled output), and the cache is keyed by that commit hash, so repeat installs reuse identical code.",
+    "expected_sources": ["uv/concepts/cache.md", "uv/concepts/resolution.md"],
+    "category": "multihop"
+  },
+  {
+    "question": "After installing uv on a fresh machine with no Python, what happens when you run a project command?",
+    "expected_answer": "uv detects the missing interpreter and automatically downloads a managed Python build, then creates the environment — no separate Python installation step is required.",
+    "expected_sources": ["uv/getting-started/installation.md", "uv/concepts/python-versions.md"],
+    "category": "multihop"
+  },
+  {
+    "question": "What FastAPI mechanism are its security utilities built on top of?",
+    "expected_answer": "The dependency injection system — security schemes like OAuth2PasswordBearer are used as dependencies (Depends/Security), so they compose like any other dependency.",
+    "expected_sources": ["fastapi/en/tutorial/dependencies/index.md", "fastapi/en/tutorial/security/first-steps.md"],
+    "category": "multihop"
+  },
+  {
+    "question": "Compare how path parameters and query parameters are validated in FastAPI.",
+    "expected_answer": "Both use type annotations for conversion/validation; path parameters are part of the route and always required, while query parameters can have defaults and be optional. Numeric constraints use Path/Query helpers.",
+    "expected_sources": ["fastapi/en/tutorial/path-params.md", "fastapi/en/tutorial/query-params.md"],
+    "category": "multihop"
+  },
+  {
+    "question": "What did the 'Attention Is All You Need' paper remove from sequence transduction architectures, and what did it rely on instead?",
+    "expected_answer": "It dispensed with recurrence and convolutions entirely, relying solely on (multi-head, scaled dot-product) self-attention plus feed-forward layers — the Transformer architecture.",
+    "expected_sources": ["papers/attention-is-all-you-need.pdf"],
+    "category": "multihop"
+  },
+  {
+    "question": "What two components does the original RAG paper combine, and what knowledge source does it retrieve from?",
+    "expected_answer": "A pre-trained parametric seq2seq generator (BART) combined with a non-parametric dense retriever (DPR), retrieving passages from a Wikipedia index.",
+    "expected_sources": ["papers/retrieval-augmented-generation.pdf"],
+    "category": "multihop"
+  },
+  {
+    "question": "What is the core idea of the ReAct paper?",
+    "expected_answer": "Interleaving reasoning traces (thoughts) with task-specific actions in an LLM: reasoning helps plan and handle exceptions, while actions gather external information, outperforming reasoning-only or acting-only baselines.",
+    "expected_sources": ["papers/react-reasoning-and-acting.pdf"],
+    "category": "multihop"
+  },
+  {
+    "question": "FastAPI 中查询参数的默认值是怎么设置的？",
+    "expected_answer": "在函数参数上直接给默认值，例如 def read_items(skip: int = 0, limit: int = 10)，带默认值的查询参数是可选的。",
+    "expected_sources": ["fastapi/en/tutorial/query-params.md", "fastapi/zh/tutorial/query-params.md"],
+    "category": "crosslingual"
+  },
+  {
+    "question": "FastAPI 怎么处理浏览器跨域请求？",
+    "expected_answer": "使用 CORSMiddleware：导入后用 app.add_middleware(CORSMiddleware, allow_origins=[...], allow_credentials=..., allow_methods=..., allow_headers=...) 配置允许的源。",
+    "expected_sources": ["fastapi/en/tutorial/cors.md", "fastapi/zh/tutorial/cors.md"],
+    "category": "crosslingual"
+  },
+  {
+    "question": "在 FastAPI 里如何向客户端返回自定义的 HTTP 错误？",
+    "expected_answer": "抛出 HTTPException（如 raise HTTPException(status_code=404, detail=\"Item not found\")），也可以注册自定义异常处理器。",
+    "expected_sources": ["fastapi/en/tutorial/handling-errors.md", "fastapi/zh/tutorial/handling-errors.md"],
+    "category": "crosslingual"
+  },
+  {
+    "question": "FastAPI 的后台任务功能怎么使用？",
+    "expected_answer": "在路径操作函数中声明 BackgroundTasks 类型的参数，调用它的 add_task(函数, 参数) 方法；任务会在响应发送后执行。",
+    "expected_sources": ["fastapi/en/tutorial/background-tasks.md", "fastapi/zh/tutorial/background-tasks.md"],
+    "category": "crosslingual"
+  },
+  {
+    "question": "什么时候应该用 async def 定义路径操作函数，什么时候用普通 def？",
+    "expected_answer": "代码里需要 await（使用支持异步的库）时用 async def；调用不支持 await 的阻塞库时用普通 def，FastAPI 会把它放进线程池执行。",
+    "expected_sources": ["fastapi/en/async.md", "fastapi/zh/async.md"],
+    "category": "crosslingual"
+  },
+  {
+    "question": "FastAPI 如何接收用户上传的文件？",
+    "expected_answer": "用 File 和 UploadFile：参数声明为 UploadFile 类型（推荐），它基于 spooled 文件、支持异步读取并带有文件名等元数据；需要安装 python-multipart。",
+    "expected_sources": ["fastapi/en/tutorial/request-files.md", "fastapi/zh/tutorial/request-files.md"],
+    "category": "crosslingual"
+  },
+  {
+    "question": "FastAPI 的依赖注入系统是干什么用的？",
+    "expected_answer": "用 Depends 声明共享逻辑（数据库会话、认证、公共参数等），FastAPI 自动解析并注入结果，依赖还可以嵌套，便于复用和测试。",
+    "expected_sources": ["fastapi/en/tutorial/dependencies/index.md", "fastapi/zh/tutorial/dependencies/index.md"],
+    "category": "crosslingual"
+  },
+  {
+    "question": "如何在 FastAPI 中声明并校验 JSON 请求体？",
+    "expected_answer": "定义继承 Pydantic BaseModel 的类并作为函数参数，FastAPI 自动读取 JSON、做类型校验并生成文档。",
+    "expected_sources": ["fastapi/en/tutorial/body.md", "fastapi/zh/tutorial/body.md"],
+    "category": "crosslingual"
+  },
+  {
+    "question": "写好第一个 FastAPI 应用后，用什么命令把它跑起来？",
+    "expected_answer": "fastapi dev main.py，开发模式自动重载，默认地址 http://127.0.0.1:8000。",
+    "expected_sources": ["fastapi/en/tutorial/first-steps.md", "fastapi/zh/tutorial/first-steps.md"],
+    "category": "crosslingual"
+  },
+  {
+    "question": "FastAPI 路径参数的类型标注有什么作用？",
+    "expected_answer": "提供自动类型转换和数据校验（出错时返回清晰的错误信息）、编辑器支持以及自动生成 API 文档。",
+    "expected_sources": ["fastapi/en/tutorial/path-params.md", "fastapi/zh/tutorial/path-params.md"],
+    "category": "crosslingual"
+  },
+  {
+    "question": "它是在响应返回之前还是之后执行？",
+    "expected_answer": "之后 — BackgroundTasks 注册的任务在响应发送给客户端之后才运行，所以客户端不用等待任务完成。",
+    "expected_sources": ["fastapi/en/tutorial/background-tasks.md", "fastapi/zh/tutorial/background-tasks.md"],
+    "category": "followup",
+    "history": [
+      {"role": "user", "content": "FastAPI 的后台任务怎么用？"},
+      {"role": "assistant", "content": "在路径操作函数中声明一个 BackgroundTasks 类型的参数，然后调用它的 add_task() 方法注册任务函数和参数。"}
+    ]
+  },
+  {
+    "question": "那怎么只针对某一个包做这件事？",
+    "expected_answer": "uv cache clean <package-name>，例如 uv cache clean ruff，只清除该包的缓存。",
+    "expected_sources": ["uv/concepts/cache.md"],
+    "category": "followup",
+    "history": [
+      {"role": "user", "content": "uv 的缓存怎么清空？"},
+      {"role": "assistant", "content": "运行 uv cache clean 可以清空整个 uv 缓存。"}
+    ]
+  },
+  {
+    "question": "用通配符的方式有什么限制？",
+    "expected_answer": "通配符 \"*\" 允许所有源，但不允许携带凭据的请求：Cookie、Authorization 头（如 Bearer token）等都不行，要支持凭据必须显式列出允许的源。",
+    "expected_sources": ["fastapi/en/tutorial/cors.md", "fastapi/zh/tutorial/cors.md"],
+    "category": "followup",
+    "history": [
+      {"role": "user", "content": "FastAPI 怎么配置允许的跨域来源？"},
+      {"role": "assistant", "content": "用 CORSMiddleware 的 allow_origins 参数传入允许的源列表，也可以用通配符 \"*\" 允许所有源。"}
+    ]
+  },
+  {
+    "question": "它比直接用 bytes 接收好在哪里？",
+    "expected_answer": "UploadFile 用 spooled 文件（超过内存阈值落盘）不会撑爆内存，提供异步 read/seek 等方法，还带 filename、content_type 等元数据。",
+    "expected_sources": ["fastapi/en/tutorial/request-files.md", "fastapi/zh/tutorial/request-files.md"],
+    "category": "followup",
+    "history": [
+      {"role": "user", "content": "FastAPI 上传文件用什么类型？"},
+      {"role": "assistant", "content": "推荐把参数声明为 UploadFile 类型来接收上传的文件。"}
+    ]
+  },
+  {
+    "question": "如果机器上没装它会怎么样？",
+    "expected_answer": "uv 会自动下载并管理所需的 Python 版本，不需要事先单独安装 Python。",
+    "expected_sources": ["uv/concepts/python-versions.md"],
+    "category": "followup",
+    "history": [
+      {"role": "user", "content": "uv 运行项目需要什么版本的 Python？"},
+      {"role": "assistant", "content": "uv 会根据项目要求（如 requires-python）选择合适的 Python 解释器。"}
+    ]
+  },
+  {
+    "question": "Django 的 ORM 怎么定义数据模型？",
+    "expected_answer": "I don't have information about that in the provided documents.",
+    "expected_sources": [],
+    "category": "unanswerable",
+    "answerable": false
+  },
+  {
+    "question": "Kubernetes 里 Pod 和 Deployment 有什么区别？",
+    "expected_answer": "I don't have information about that in the provided documents.",
+    "expected_sources": [],
+    "category": "unanswerable",
+    "answerable": false
+  },
+  {
+    "question": "PyTorch 的 autograd 是怎么实现反向传播的？",
+    "expected_answer": "I don't have information about that in the provided documents.",
+    "expected_sources": [],
+    "category": "unanswerable",
+    "answerable": false
+  },
+  {
+    "question": "React 的 useState 钩子怎么用？",
+    "expected_answer": "I don't have information about that in the provided documents.",
+    "expected_sources": [],
+    "category": "unanswerable",
+    "answerable": false
+  },
+  {
+    "question": "Rust 的所有权机制是怎么保证内存安全的？",
+    "expected_answer": "I don't have information about that in the provided documents.",
+    "expected_sources": [],
+    "category": "unanswerable",
+    "answerable": false
   }
 ]

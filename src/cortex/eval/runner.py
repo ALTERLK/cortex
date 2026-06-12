@@ -14,8 +14,23 @@ from cortex.eval.metrics import (
     mrr,
 )
 from cortex.llm.base import LLMClient
+from cortex.llm.postprocess import strip_thinking
 from cortex.rag.generator import Generator
 from cortex.rag.retriever import Retriever
+
+# Phrases that signal an honest refusal. The generator's system prompt
+# mandates the first one; the others catch close paraphrases.
+_REFUSAL_MARKERS = (
+    "don't have information",
+    "do not have information",
+    "no information about",
+    "not covered in the provided documents",
+)
+
+
+def _is_refusal(answer: str) -> bool:
+    lowered = answer.lower()
+    return any(marker in lowered for marker in _REFUSAL_MARKERS)
 
 
 @dataclass
@@ -28,22 +43,33 @@ class EvalResult:
     generated_answer: str
     correctness: float
     faithfulness: float
+    category: str = "factual"
+    answerable: bool = True
     retrieved_sources: list[str] = field(default_factory=list)
 
 
 @dataclass
 class EvalReport:
-    """Aggregated metrics across the full eval set."""
+    """Aggregated metrics across the full eval set.
+
+    Retrieval metrics (hit-rate, MRR) aggregate ANSWERABLE questions only —
+    an unanswerable trap question has no correct source to retrieve, so
+    counting it would distort the retrieval picture in either direction.
+    """
 
     results: list[EvalResult]
 
     @property
+    def _answerable(self) -> list[EvalResult]:
+        return [r for r in self.results if r.answerable]
+
+    @property
     def hit_rate(self) -> float:
-        return hit_rate([r.hit for r in self.results])
+        return hit_rate([r.hit for r in self._answerable])
 
     @property
     def mrr(self) -> float:
-        return mrr([r.reciprocal_rank for r in self.results])
+        return mrr([r.reciprocal_rank for r in self._answerable])
 
     @property
     def avg_correctness(self) -> float:
@@ -55,17 +81,48 @@ class EvalReport:
         vals = [r.faithfulness for r in self.results]
         return sum(vals) / len(vals) if vals else 0.0
 
+    @property
+    def refusal_accuracy(self) -> float | None:
+        """Share of unanswerable questions that were honestly refused."""
+        traps = [r for r in self.results if not r.answerable]
+        if not traps:
+            return None
+        return sum(1 for r in traps if r.correctness >= 4.0) / len(traps)
+
+    def by_category(self) -> dict[str, dict[str, float]]:
+        """Per-category breakdown: count, hit-rate, MRR, correctness."""
+        out: dict[str, dict[str, float]] = {}
+        for cat in sorted({r.category for r in self.results}):
+            rows = [r for r in self.results if r.category == cat]
+            answerable = [r for r in rows if r.answerable]
+            out[cat] = {
+                "count": len(rows),
+                "hit_rate": hit_rate([r.hit for r in answerable]) if answerable else float("nan"),
+                "mrr": mrr([r.reciprocal_rank for r in answerable]) if answerable else float("nan"),
+                "correctness": sum(r.correctness for r in rows) / len(rows),
+            }
+        return out
+
     def print(self) -> None:
         """Print a human-readable summary."""
         n = len(self.results)
-        print(f"\n{'='*50}")
-        print(f"  CORTEX EVAL REPORT  ({n} questions)")
-        print(f"{'='*50}")
-        print(f"  Hit-rate@k   : {self.hit_rate:.1%}  ({sum(r.hit for r in self.results)}/{n})")
+        n_ans = len(self._answerable)
+        print(f"\n{'=' * 62}")
+        print(f"  CORTEX EVAL REPORT  ({n} questions, {n_ans} answerable)")
+        print(f"{'=' * 62}")
+        print(f"  Hit-rate@k   : {self.hit_rate:.1%}  ({sum(r.hit for r in self._answerable)}/{n_ans})")
         print(f"  MRR          : {self.mrr:.3f}")
         print(f"  Correctness  : {self.avg_correctness:.2f} / 5")
         print(f"  Faithfulness : {self.avg_faithfulness:.2f} / 5")
-        print(f"{'='*50}\n")
+        if self.refusal_accuracy is not None:
+            print(f"  Refusals     : {self.refusal_accuracy:.0%} of unanswerable questions refused")
+        print(f"  {'-' * 58}")
+        print(f"  {'category':<14}{'n':>4}{'hit-rate':>10}{'MRR':>8}{'correct':>9}")
+        for cat, m in self.by_category().items():
+            hr = f"{m['hit_rate']:.0%}" if m["hit_rate"] == m["hit_rate"] else "—"
+            mr = f"{m['mrr']:.3f}" if m["mrr"] == m["mrr"] else "—"
+            print(f"  {cat:<14}{m['count']:>4}{hr:>10}{mr:>8}{m['correctness']:>8.2f}")
+        print(f"{'=' * 62}\n")
 
     def save(self, path: Path | str = "data/eval_results.json") -> None:
         """Save detailed per-question results to JSON."""
@@ -74,6 +131,8 @@ class EvalReport:
         rows = [
             {
                 "question": r.question,
+                "category": r.category,
+                "answerable": r.answerable,
                 "hit": r.hit,
                 "reciprocal_rank": r.reciprocal_rank,
                 "correctness": r.correctness,
@@ -94,6 +153,7 @@ def run_eval(
     judge_llm: LLMClient,
     *,
     top_k: int = 5,
+    rewriter: object | None = None,
     verbose: bool = True,
 ) -> EvalReport:
     """Run the full evaluation loop and return an EvalReport.
@@ -108,28 +168,43 @@ def run_eval(
 
     for i, qa in enumerate(dataset, 1):
         if verbose:
-            print(f"[{i:2d}/{n}] {qa.question[:60]}…")
+            print(f"[{i:2d}/{n}] ({qa.category}) {qa.question[:55]}…")
 
-        # Retrieve
-        passages = retriever.retrieve(qa.question)
+        # Retrieve. With a rewriter, history-dependent questions are first
+        # rewritten into standalone queries (the A/B for query rewriting).
+        query = qa.question
+        if rewriter is not None and qa.history:
+            query = rewriter.rewrite(qa.question, qa.history)
+            if verbose and query != qa.question:
+                print(f"       rewritten: {query[:60]}")
+        passages = retriever.retrieve(query)
         hit, rr = compute_retrieval_hit(passages, qa.expected_sources, top_k)
 
         # Generate
-        gen_response = generator.generate(qa.question, passages)
+        gen_response = generator.generate(qa.question, passages, qa.history or None)
+        answer = strip_thinking(gen_response.answer)
 
-        # Judge
-        scores = judge_answer(
-            qa.question, qa.expected_answer, gen_response.answer, judge_llm
-        )
+        # Score. Unanswerable questions are scored deterministically: the
+        # only correct behaviour is an honest refusal — no judge needed.
+        if not qa.answerable:
+            refused = _is_refusal(answer)
+            scores = {
+                "correctness": 5.0 if refused else 1.0,
+                "faithfulness": 5.0 if refused else 1.0,
+            }
+        else:
+            scores = judge_answer(qa.question, qa.expected_answer, answer, judge_llm)
 
         results.append(
             EvalResult(
                 question=qa.question,
                 hit=hit,
                 reciprocal_rank=rr,
-                generated_answer=gen_response.answer,
+                generated_answer=answer,
                 correctness=scores["correctness"],
                 faithfulness=scores["faithfulness"],
+                category=qa.category,
+                answerable=qa.answerable,
                 retrieved_sources=[p.source for p in passages],
             )
         )

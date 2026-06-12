@@ -183,3 +183,85 @@ def test_report_avg_correctness() -> None:
         make_eval_result(True, 1.0, 5.0, 4.0),
     ])
     assert report.avg_correctness == pytest.approx(4.0)
+
+
+# ---------------------------------------------------------------------------
+# v2: categories, unanswerable, refusal detection
+# ---------------------------------------------------------------------------
+
+
+def test_load_dataset_v2_fields(tmp_path) -> None:
+    data = [{
+        "question": "Q?",
+        "expected_answer": "A.",
+        "expected_sources": [],
+        "category": "unanswerable",
+        "answerable": False,
+        "history": [{"role": "user", "content": "before"}],
+    }]
+    f = tmp_path / "eval.json"
+    f.write_text(json.dumps(data), encoding="utf-8")
+    pair = load_dataset(f)[0]
+    assert pair.category == "unanswerable"
+    assert pair.answerable is False
+    assert pair.history[0]["content"] == "before"
+
+
+def test_load_dataset_defaults_for_old_format(tmp_path) -> None:
+    data = [{"question": "Q?", "expected_answer": "A.", "expected_sources": ["x.md"]}]
+    f = tmp_path / "eval.json"
+    f.write_text(json.dumps(data), encoding="utf-8")
+    pair = load_dataset(f)[0]
+    assert pair.category == "factual"
+    assert pair.answerable is True
+    assert pair.history == []
+
+
+def make_result_v2(*, hit: bool = True, rr: float = 1.0, correctness: float = 4.0,
+                   category: str = "factual", answerable: bool = True) -> EvalResult:
+    return EvalResult(
+        question="Q?", hit=hit, reciprocal_rank=rr, generated_answer="A.",
+        correctness=correctness, faithfulness=4.0,
+        category=category, answerable=answerable,
+    )
+
+
+def test_report_excludes_unanswerable_from_retrieval_metrics() -> None:
+    report = EvalReport([
+        make_result_v2(hit=True, rr=1.0),
+        make_result_v2(hit=False, rr=0.0, category="unanswerable", answerable=False),
+    ])
+    # Only the answerable row counts: hit-rate 100%, not 50%.
+    assert report.hit_rate == pytest.approx(1.0)
+    assert report.mrr == pytest.approx(1.0)
+
+
+def test_report_refusal_accuracy() -> None:
+    report = EvalReport([
+        make_result_v2(category="unanswerable", answerable=False, correctness=5.0),
+        make_result_v2(category="unanswerable", answerable=False, correctness=1.0),
+    ])
+    assert report.refusal_accuracy == pytest.approx(0.5)
+
+
+def test_report_refusal_accuracy_none_without_traps() -> None:
+    assert EvalReport([make_result_v2()]).refusal_accuracy is None
+
+
+def test_report_by_category() -> None:
+    report = EvalReport([
+        make_result_v2(category="factual", hit=True, rr=1.0),
+        make_result_v2(category="crosslingual", hit=False, rr=0.0, correctness=2.0),
+    ])
+    cats = report.by_category()
+    assert cats["factual"]["hit_rate"] == pytest.approx(1.0)
+    assert cats["crosslingual"]["hit_rate"] == pytest.approx(0.0)
+    assert cats["crosslingual"]["correctness"] == pytest.approx(2.0)
+
+
+def test_is_refusal_detection() -> None:
+    from cortex.eval.runner import _is_refusal
+
+    assert _is_refusal("I don't have information about that in the provided documents.")
+    assert _is_refusal("Sorry, I DO NOT have information on this topic.")
+    assert not _is_refusal("Django models are defined by subclassing models.Model.")
