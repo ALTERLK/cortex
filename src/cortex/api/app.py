@@ -10,17 +10,21 @@ from __future__ import annotations
 
 import json
 import logging
+import secrets
 import time
+import uuid
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI, Request, Response
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from cortex.agent.loop import AgentLoop
 from cortex.agent.tools import ToolExecutor
+from cortex.api.context import request_id_var
+from cortex.api.ratelimit import SlidingWindowLimiter
 from cortex.config import get_settings
 from cortex.ingest.embedder import Embedder
 from cortex.ingest.store import VectorStore
@@ -90,17 +94,52 @@ def create_app() -> FastAPI:
     def index() -> FileResponse:
         return FileResponse(static_dir / "index.html")
 
+    # One limiter for the app's lifetime (per-process; Redis when multi-instance).
+    app.state.limiter = SlidingWindowLimiter(max(get_settings().rate_limit_per_minute, 1))
+
+    # NOTE (learning): with @app.middleware, the LAST registered middleware
+    # runs FIRST. Registration order below: security (inner) then
+    # logging/request-id (outer) — so even rejected requests get logged
+    # with a request id.
+    @app.middleware("http")
+    async def security(request: Request, call_next: object) -> Response:
+        settings = get_settings()
+        path = request.url.path
+
+        # API-key auth for the expensive/dangerous endpoints. /health stays
+        # open for load balancers; the static UI stays viewable.
+        if settings.api_key and path.startswith(("/ask", "/ingest")):
+            provided = request.headers.get("x-api-key", "")
+            # compare_digest: constant-time comparison, immune to timing attacks.
+            if not secrets.compare_digest(provided, settings.api_key):
+                return JSONResponse(status_code=401, content={"detail": "Invalid or missing API key"})
+
+        # Per-IP rate limit on LLM-backed endpoints — every /ask costs money.
+        if settings.rate_limit_per_minute > 0 and path.startswith("/ask"):
+            client_ip = request.client.host if request.client else "unknown"
+            if not app.state.limiter.allow(client_ip):
+                return JSONResponse(status_code=429, content={"detail": "Rate limit exceeded"})
+
+        return await call_next(request)  # type: ignore[operator]
+
     # NOTE (learning): middleware runs around every request, so it's the right
     # place for cross-cutting concerns like access logging. The actual business
     # metrics (tokens, cost) are logged inside the /ask handler where they're
     # available.
     @app.middleware("http")
     async def log_requests(request: Request, call_next: object) -> Response:
+        rid = uuid.uuid4().hex[:12]
+        token = request_id_var.set(rid)
         start = time.perf_counter()
-        response: Response = await call_next(request)  # type: ignore[operator]
+        try:
+            response: Response = await call_next(request)  # type: ignore[operator]
+        finally:
+            request_id_var.reset(token)
         latency_ms = round((time.perf_counter() - start) * 1000, 1)
+        response.headers["X-Request-ID"] = rid
         logger.info(json.dumps({
             "event": "request",
+            "request_id": rid,
             "method": request.method,
             "path": request.url.path,
             "status": response.status_code,

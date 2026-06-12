@@ -34,4 +34,6 @@ def get_llm_client() -> LLMClient:
         api_key=settings.llm_api_key,
         base_url=settings.llm_base_url,
         model=settings.llm_model,
+        timeout_s=settings.llm_timeout_s,
+        max_retries=settings.llm_max_retries,
     )

@@ -216,6 +216,9 @@ async function ask(question) {
         ensureBubble();
         answerText = data.text;
       },
+      error(data) {
+        showToast(data.detail || "Server error");
+      },
       done(data) {
         ensureBubble();
         // Final render: swap plain streamed text for citation chips.

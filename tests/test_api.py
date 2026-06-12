@@ -420,3 +420,97 @@ def test_static_js_served(client: TestClient) -> None:
     resp = client.get("/static/app.js")
     assert resp.status_code == 200
     assert "fetch" in resp.text
+
+
+# ---------------------------------------------------------------------------
+# Resilience: 502 mapping, SSE error event, auth, rate limit, request id
+# ---------------------------------------------------------------------------
+
+from cortex.llm.base import LLMUnavailableError  # noqa: E402
+
+
+def _make_app(generator=None):
+    """App with fake components; optionally override the generator."""
+    app = create_app()
+
+    @asynccontextmanager
+    async def test_lifespan(a):
+        a.state.retriever = _FakeRetriever()
+        a.state.generator = generator or _FakeGenerator()
+        a.state.agent = _FakeAgent()
+        a.state.embedder = _FakeEmbedder()
+        a.state.store = _FakeStore()
+        yield
+
+    app.router.lifespan_context = test_lifespan
+    return app
+
+
+class _DownGenerator:
+    """Simulates a dead/timing-out LLM provider."""
+
+    def generate(self, question, passages, history=None):
+        raise LLMUnavailableError("connection timed out")
+
+    def generate_stream(self, question, passages, history=None):
+        raise LLMUnavailableError("connection timed out")
+        yield  # pragma: no cover — makes this a generator function
+
+
+def test_ask_llm_down_returns_502() -> None:
+    with TestClient(_make_app(generator=_DownGenerator())) as c:
+        resp = c.post("/ask", json={"question": "Q?"})
+        assert resp.status_code == 502
+        assert resp.json()["detail"] == "LLM provider unavailable"
+
+
+def test_stream_llm_down_emits_error_event() -> None:
+    with TestClient(_make_app(generator=_DownGenerator())) as c:
+        events = parse_sse(c.post("/ask/stream", json={"question": "Q?"}).text)
+        types = [e for e, _ in events]
+        assert "error" in types
+        error = next(d for e, d in events if e == "error")
+        assert error["detail"] == "LLM provider unavailable"
+
+
+def test_response_carries_request_id(client: TestClient) -> None:
+    resp = client.post("/ask", json={"question": "Q?"})
+    assert len(resp.headers["X-Request-ID"]) == 12
+
+
+def test_api_key_auth(monkeypatch: pytest.MonkeyPatch) -> None:
+    from cortex.config import get_settings
+
+    monkeypatch.setenv("API_KEY", "sekret")
+    get_settings.cache_clear()
+    try:
+        with TestClient(_make_app()) as c:
+            # No key -> 401; wrong key -> 401; right key -> 200.
+            assert c.post("/ask", json={"question": "Q?"}).status_code == 401
+            assert c.post("/ask", json={"question": "Q?"},
+                          headers={"X-API-Key": "wrong"}).status_code == 401
+            assert c.post("/ask", json={"question": "Q?"},
+                          headers={"X-API-Key": "sekret"}).status_code == 200
+            # Health and the UI stay open (load balancers, browsers).
+            assert c.get("/health").status_code == 200
+            assert c.get("/").status_code == 200
+    finally:
+        get_settings.cache_clear()
+
+
+def test_rate_limit_returns_429(monkeypatch: pytest.MonkeyPatch) -> None:
+    from cortex.config import get_settings
+
+    monkeypatch.setenv("RATE_LIMIT_PER_MINUTE", "2")
+    get_settings.cache_clear()
+    try:
+        with TestClient(_make_app()) as c:
+            assert c.post("/ask", json={"question": "Q?"}).status_code == 200
+            assert c.post("/ask", json={"question": "Q?"}).status_code == 200
+            resp = c.post("/ask", json={"question": "Q?"})
+            assert resp.status_code == 429
+            assert "limit" in resp.json()["detail"].lower()
+            # /health is not rate limited.
+            assert c.get("/health").status_code == 200
+    finally:
+        get_settings.cache_clear()

@@ -20,9 +20,9 @@ import json
 from collections.abc import Iterator
 from typing import Any
 
-from openai import OpenAI
+from openai import OpenAI, OpenAIError
 
-from cortex.llm.base import LLMResponse, TokenUsage, ToolCall
+from cortex.llm.base import LLMResponse, LLMUnavailableError, TokenUsage, ToolCall
 
 
 class MissingAPIKeyError(RuntimeError):
@@ -30,12 +30,26 @@ class MissingAPIKeyError(RuntimeError):
 
 
 class OpenAICompatibleClient:
-    def __init__(self, api_key: str, base_url: str, model: str) -> None:
+    def __init__(
+        self,
+        api_key: str,
+        base_url: str,
+        model: str,
+        timeout_s: float = 60.0,
+        max_retries: int = 2,
+    ) -> None:
         if not api_key:
             raise MissingAPIKeyError(
                 "LLM_API_KEY is not set. Copy .env.example to .env and fill in your key."
             )
-        self._client = OpenAI(api_key=api_key, base_url=base_url)
+        # NOTE (learning): explicit timeout + bounded retries are the minimum
+        # resilience for any network dependency. Without a timeout, one hung
+        # provider connection pins a worker thread forever; the SDK retries
+        # transient failures (connection errors, 5xx) with backoff.
+        self._client = OpenAI(
+            api_key=api_key, base_url=base_url,
+            timeout=timeout_s, max_retries=max_retries,
+        )
         self._model = model
 
     def chat(
@@ -45,12 +59,15 @@ class OpenAICompatibleClient:
         tools: list[dict[str, Any]] | None = None,
         temperature: float = 0.3,
     ) -> LLMResponse:
-        response = self._client.chat.completions.create(
-            model=self._model,
-            messages=messages,
-            tools=tools or None,  # the API rejects an empty list
-            temperature=temperature,
-        )
+        try:
+            response = self._client.chat.completions.create(
+                model=self._model,
+                messages=messages,
+                tools=tools or None,  # the API rejects an empty list
+                temperature=temperature,
+            )
+        except OpenAIError as exc:
+            raise LLMUnavailableError(f"LLM provider error: {exc}") from exc
 
         choice = response.choices[0]
 
@@ -90,32 +107,35 @@ class OpenAICompatibleClient:
         # carrying a small "delta" of the answer. stream_options asks the
         # provider to append one final chunk with token usage (some
         # OpenAI-compatible proxies omit it — we fall back to zeros).
-        stream = self._client.chat.completions.create(
-            model=self._model,
-            messages=messages,
-            temperature=temperature,
-            stream=True,
-            stream_options={"include_usage": True},
-        )
-
         parts: list[str] = []
         usage = TokenUsage(0, 0)
         finish = "stop"
 
-        for chunk in stream:
-            if chunk.usage:
-                usage = TokenUsage(
-                    input_tokens=chunk.usage.prompt_tokens,
-                    output_tokens=chunk.usage.completion_tokens,
-                )
-            if not chunk.choices:
-                continue  # the usage-only final chunk has no choices
-            choice = chunk.choices[0]
-            if choice.finish_reason:
-                finish = choice.finish_reason
-            delta = choice.delta.content if choice.delta else None
-            if delta:
-                parts.append(delta)
-                yield delta
+        try:
+            stream = self._client.chat.completions.create(
+                model=self._model,
+                messages=messages,
+                temperature=temperature,
+                stream=True,
+                stream_options={"include_usage": True},
+            )
+
+            for chunk in stream:
+                if chunk.usage:
+                    usage = TokenUsage(
+                        input_tokens=chunk.usage.prompt_tokens,
+                        output_tokens=chunk.usage.completion_tokens,
+                    )
+                if not chunk.choices:
+                    continue  # the usage-only final chunk has no choices
+                choice = chunk.choices[0]
+                if choice.finish_reason:
+                    finish = choice.finish_reason
+                delta = choice.delta.content if choice.delta else None
+                if delta:
+                    parts.append(delta)
+                    yield delta
+        except OpenAIError as exc:
+            raise LLMUnavailableError(f"LLM provider error: {exc}") from exc
 
         yield LLMResponse(content="".join(parts), finish_reason=finish, usage=usage)

@@ -26,6 +26,9 @@ class Settings(BaseSettings):
     llm_api_key: str = ""
     llm_base_url: str = "https://api.deepseek.com"
     llm_model: str = "deepseek-chat"
+    # Resilience: per-request timeout and bounded SDK retries.
+    llm_timeout_s: float = 60.0
+    llm_max_retries: int = 2
 
     # --- local model cache ---
     # Override to redirect HuggingFace downloads away from the default C: cache.
@@ -45,6 +48,11 @@ class Settings(BaseSettings):
     # is rejected — otherwise a public deployment would let anyone index (and
     # then query) arbitrary server files.
     ingest_dirs: str = "docs,corpus"
+    # When set, /ask* and /ingest* require this value in the X-API-Key header.
+    # Empty = auth disabled (local development).
+    api_key: str = ""
+    # Per-IP sliding-window limit for /ask* endpoints. 0 = disabled.
+    rate_limit_per_minute: int = 30
 
     model_config = SettingsConfigDict(
         env_file=".env",

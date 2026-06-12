@@ -21,6 +21,7 @@ from fastapi import APIRouter, BackgroundTasks, HTTPException, Request
 from fastapi.responses import StreamingResponse
 
 from cortex.agent.loop import ToolCallRecord
+from cortex.api.context import request_id_var
 from cortex.api.schemas import (
     AskRequest,
     AskResponse,
@@ -32,6 +33,7 @@ from cortex.api.schemas import (
 )
 from cortex.config import get_settings
 from cortex.ingest.pipeline import ingest_directory
+from cortex.llm.base import LLMUnavailableError
 from cortex.llm.postprocess import ThinkingStreamFilter, strip_thinking
 from cortex.rag.generator import GeneratorResponse
 
@@ -66,31 +68,42 @@ def health() -> dict[str, str]:
     return {"status": "ok"}
 
 
+def _log(payload: dict) -> None:
+    """Emit one structured log line, stamped with the request id."""
+    payload["request_id"] = request_id_var.get()
+    logger.info(json.dumps(payload))
+
+
 @router.post("/ask", response_model=AskResponse)
 def ask(body: AskRequest, request: Request) -> AskResponse:
     t0 = time.perf_counter()
 
     history = _history_messages(body)
 
-    if body.mode == "agent":
-        # M4 loop: the LLM decides when/what/how many times to search.
-        result = request.app.state.agent.run(body.question, history)
-        sources: list[SourceRef] = []
-        tool_calls = [
-            ToolCallView(name=tc.name, arguments=tc.arguments, result=tc.result)
-            for tc in result.tool_calls
-        ]
-        iterations = result.iterations
-    else:
-        query = _retrieval_query(request, body.question, history)
-        passages = request.app.state.retriever.retrieve(query, top_k=body.top_k)
-        result = request.app.state.generator.generate(body.question, passages, history)
-        sources = [
-            SourceRef(source=p.source, chunk_index=p.chunk_index, score=round(p.score, 4), text=p.text)
-            for p in passages
-        ]
-        tool_calls = []
-        iterations = None
+    try:
+        if body.mode == "agent":
+            # M4 loop: the LLM decides when/what/how many times to search.
+            result = request.app.state.agent.run(body.question, history)
+            sources: list[SourceRef] = []
+            tool_calls = [
+                ToolCallView(name=tc.name, arguments=tc.arguments, result=tc.result)
+                for tc in result.tool_calls
+            ]
+            iterations = result.iterations
+        else:
+            query = _retrieval_query(request, body.question, history)
+            passages = request.app.state.retriever.retrieve(query, top_k=body.top_k)
+            result = request.app.state.generator.generate(body.question, passages, history)
+            sources = [
+                SourceRef(source=p.source, chunk_index=p.chunk_index, score=round(p.score, 4), text=p.text)
+                for p in passages
+            ]
+            tool_calls = []
+            iterations = None
+    except LLMUnavailableError as exc:
+        # Provider down/timeout: a clean 502, never a stack trace to the client.
+        _log({"event": "ask_failed", "mode": body.mode, "error": str(exc)})
+        raise HTTPException(status_code=502, detail="LLM provider unavailable") from exc
 
     latency_ms = round((time.perf_counter() - t0) * 1000, 1)
     cost = (
@@ -98,7 +111,7 @@ def ask(body: AskRequest, request: Request) -> AskResponse:
         + result.usage.output_tokens * _OUTPUT_COST_PER_TOKEN
     )
 
-    logger.info(json.dumps({
+    _log({
         "event": "ask",
         "mode": body.mode,
         "latency_ms": latency_ms,
@@ -107,7 +120,7 @@ def ask(body: AskRequest, request: Request) -> AskResponse:
         "cost_usd_est": round(cost, 6),
         "sources_returned": len(sources),
         "tool_calls": len(tool_calls),
-    }))
+    })
 
     return AskResponse(
         # Extended-thinking models leak <thinking> blocks into content;
@@ -200,12 +213,12 @@ def ask_stream(body: AskRequest, request: Request) -> StreamingResponse:
         latency_ms = round((time.perf_counter() - t0) * 1000, 1)
         cost = round(in_tok * _INPUT_COST_PER_TOKEN + out_tok * _OUTPUT_COST_PER_TOKEN, 6)
 
-        logger.info(json.dumps({
+        _log({
             "event": "ask_stream", "mode": mode, "latency_ms": latency_ms,
             "input_tokens": in_tok, "output_tokens": out_tok,
             "cost_usd_est": cost, "sources_returned": sources,
             "tool_calls": tool_calls,
-        }))
+        })
         payload = {
             "mode": mode, "latency_ms": latency_ms,
             "input_tokens": in_tok, "output_tokens": out_tok,
@@ -215,8 +228,21 @@ def ask_stream(body: AskRequest, request: Request) -> StreamingResponse:
             payload["iterations"] = iterations
         return _sse("done", payload)
 
+    def guarded(events: Iterator[str]) -> Iterator[str]:
+        """Convert provider failures into an SSE error event.
+
+        NOTE (learning): once streaming has started the HTTP status (200) is
+        already on the wire — an in-band `error` event is the only way left
+        to tell the client something went wrong.
+        """
+        try:
+            yield from events
+        except LLMUnavailableError as exc:
+            _log({"event": "ask_stream_failed", "mode": body.mode, "error": str(exc)})
+            yield _sse("error", {"detail": "LLM provider unavailable"})
+
     events = agent_events() if body.mode == "agent" else rag_events()
-    return StreamingResponse(events, media_type="text/event-stream")
+    return StreamingResponse(guarded(events), media_type="text/event-stream")
 
 
 # In-memory job table. Survives only the process lifetime — acceptable for a

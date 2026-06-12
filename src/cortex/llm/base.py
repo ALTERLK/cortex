@@ -24,6 +24,15 @@ from dataclasses import dataclass, field
 from typing import Any, Protocol
 
 
+class LLMUnavailableError(RuntimeError):
+    """The provider could not service the request (network error, timeout, 5xx).
+
+    NOTE (learning): adapters translate vendor-specific exceptions into this
+    one type, so the API layer can map "any provider problem" to a clean
+    502 response without importing any vendor SDK.
+    """
+
+
 @dataclass(frozen=True)
 class TokenUsage:
     """Token counts for one API call — the raw material for cost tracking."""

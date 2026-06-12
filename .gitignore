@@ -13,3 +13,4 @@ data/qdrant/
 .DS_Store
 .claude/
 data/*.log
+corpus/
