@@ -1,0 +1,118 @@
+/* Evaluation dashboard. */
+
+.eval-main { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+
+.eval { flex: 1; min-height: 0; overflow-y: auto; padding: var(--space-6) var(--space-5) 5rem; }
+.eval > * { max-width: 62rem; margin-left: auto; margin-right: auto; }
+
+.eval-head h1 { margin: 0 0 var(--space-2); font-size: var(--text-xl); font-weight: 680; letter-spacing: -0.025em; line-height: 1.15; }
+.eval-head p { margin: 0; max-width: 44rem; color: var(--text-2); }
+
+.facts { display: flex; flex-wrap: wrap; gap: var(--space-5); margin-top: var(--space-5); padding: var(--space-4) 0; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+.fact { display: flex; flex-direction: column; line-height: 1.25; }
+.fact b { font-size: var(--text-lg); font-weight: 650; font-variant-numeric: tabular-nums; }
+.fact span { font-size: var(--text-xs); color: var(--text-3); }
+
+.eval-empty { margin-top: var(--space-6); color: var(--text-3); }
+
+.block { margin-top: var(--space-6); }
+.block h2 { margin: 0 0 var(--space-1); font-size: var(--text-lg); font-weight: 650; letter-spacing: -0.01em; }
+.block .lead { margin: 0 0 var(--space-4); max-width: 44rem; color: var(--text-2); font-size: var(--text-sm); }
+.block .note { margin: var(--space-3) 0 0; max-width: 44rem; color: var(--text-3); font-size: var(--text-xs); }
+
+.card { border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--surface); }
+.scroll-x { overflow-x: auto; }
+
+/* --------------------------------------------------- retrieval ladder */
+
+.ladder { padding: var(--space-4) var(--space-5) var(--space-3); }
+
+.axis, .run-row { display: grid; grid-template-columns: 13rem minmax(8rem, 1fr) 4.2rem 4rem 4.6rem; gap: var(--space-3); align-items: center; min-width: 40rem; }
+
+.axis { margin-bottom: var(--space-2); font-size: var(--text-xs); color: var(--text-3); }
+.axis .ticks { position: relative; height: 1.1em; }
+.axis .ticks span { position: absolute; transform: translateX(-50%); font-variant-numeric: tabular-nums; }
+.axis .col-h { text-align: right; }
+
+.run-row { padding: 9px 0; border-top: 1px solid var(--border); }
+.run-row .label { font-size: var(--text-sm); font-weight: 600; }
+.run-row .label small { display: block; margin-top: 1px; font-size: var(--text-xs); font-weight: 400; color: var(--text-3); }
+.run-row .lane { position: relative; height: 22px; border-radius: 4px; background: var(--surface-2); }
+.run-row .fill { position: absolute; inset: 0 auto 0 0; border-radius: 4px; background: var(--accent-soft); }
+.run-row .fill.gain { background: var(--accent); border-radius: 0 4px 4px 0; }
+.run-row .value { font-family: var(--font-mono); font-size: var(--text-sm); font-weight: 600; text-align: right; }
+.run-row .cell { font-family: var(--font-mono); font-size: var(--text-sm); text-align: right; color: var(--text-2); }
+.run-row .delta { color: var(--ok); font-size: var(--text-xs); }
+
+/* ------------------------------------------------------------- tables */
+
+table.grid { width: 100%; border-collapse: collapse; font-size: var(--text-sm); }
+table.grid th, table.grid td { padding: 9px var(--space-3); text-align: right; white-space: nowrap; border-top: 1px solid var(--border); }
+table.grid thead th { border-top: none; font-size: var(--text-xs); font-weight: 600; color: var(--text-3); }
+table.grid th:first-child, table.grid td:first-child { text-align: left; padding-left: var(--space-5); }
+table.grid td:last-child, table.grid th:last-child { padding-right: var(--space-5); }
+table.grid td { font-variant-numeric: tabular-nums; }
+table.grid td.name { font-weight: 600; white-space: normal; }
+table.grid td.name small { display: block; font-weight: 400; font-size: var(--text-xs); color: var(--text-3); }
+table.grid td.best { color: var(--ok); font-weight: 650; }
+table.grid .mult { margin-left: 5px; font-size: var(--text-xs); color: var(--text-3); }
+
+/* heat cells: correctness by question type */
+td.heat { position: relative; }
+td.heat span { position: relative; z-index: 1; }
+td.heat::before { content: ""; position: absolute; inset: 3px 4px; border-radius: 5px; background: var(--rerank); opacity: var(--heat, 0); }
+
+/* ------------------------------------------------- quality vs cost plot */
+
+.tradeoff { display: grid; grid-template-columns: minmax(0, 25rem) minmax(0, 1fr); align-items: center; border-bottom: 1px solid var(--border); }
+.plot { padding: var(--space-4); border-right: 1px solid var(--border); }
+
+.takeaways { padding: var(--space-4) var(--space-5); }
+.takeaways ul { margin: var(--space-3) 0 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: var(--space-3); }
+.takeaways li { font-size: var(--text-sm); color: var(--text-2); line-height: 1.45; }
+.takeaways li b { display: block; color: var(--text); font-weight: 650; }
+.takeaways li small { display: block; font-size: var(--text-xs); color: var(--ok); }
+
+.section-nav { display: flex; flex-direction: column; gap: 2px; padding: var(--space-3) var(--space-2); }
+.section-nav button { padding: 6px var(--space-2); border: none; border-radius: var(--radius-sm); background: none; text-align: left; font-size: var(--text-sm); color: var(--text-2); }
+.section-nav button:hover { background: var(--surface-2); color: var(--text); }
+.plot svg { display: block; width: 100%; height: auto; }
+.plot text { font-family: var(--font-ui); font-size: 11px; fill: var(--text-3); }
+.plot .pt-label { font-size: 11.5px; font-weight: 600; fill: var(--text); }
+.plot .gridline { stroke: var(--border); stroke-width: 1; }
+.plot .axis-line { stroke: var(--border-strong); stroke-width: 1; }
+.plot .pt { fill: var(--accent); stroke: var(--surface); stroke-width: 2; }
+.plot .pt.agent { fill: var(--sparse); }
+.plot .pt.auto { fill: var(--rerank); }
+
+/* ------------------------------------------------------ question table */
+
+.toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); padding: var(--space-3) var(--space-5); border-bottom: 1px solid var(--border); }
+.toolbar select { padding: 5px 8px; border: 1px solid var(--border-strong); border-radius: var(--radius-sm); background: var(--surface); font-size: var(--text-sm); }
+.toolbar .filters { display: flex; flex-wrap: wrap; gap: 4px; margin-left: auto; }
+.toolbar .filters button { border: 1px solid transparent; }
+.toolbar .filters button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); }
+
+.q-row { display: grid; grid-template-columns: 1.4rem 6.2rem minmax(0, 1fr) 3rem 3.6rem 4.6rem; gap: var(--space-3); align-items: baseline; width: 100%; padding: 8px var(--space-5); border: none; border-top: 1px solid var(--border); background: none; text-align: left; font-size: var(--text-sm); }
+.q-row:first-child { border-top: none; }
+.q-row:hover { background: var(--surface-2); }
+.q-row .hit { font-weight: 700; }
+.q-row .hit.yes { color: var(--ok); }
+.q-row .hit.no { color: var(--err); }
+.q-row .hit.na { color: var(--text-3); }
+.q-row .cat { font-size: var(--text-xs); color: var(--text-3); }
+.q-row .q { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.q-row .score, .q-row .tok { font-family: var(--font-mono); text-align: right; color: var(--text-2); font-size: var(--text-xs); }
+.q-row .score.low { color: var(--err); }
+.q-row .mode { font-size: var(--text-xs); color: var(--text-3); }
+.q-detail { margin: 0; padding: var(--space-2) var(--space-5) var(--space-4) calc(var(--space-5) + 1.4rem + var(--space-3)); font-size: var(--text-sm); color: var(--text-2); white-space: pre-wrap; word-break: break-word; }
+.q-detail b { display: block; margin-bottom: 4px; color: var(--text); font-weight: 600; white-space: normal; }
+
+@media (max-width: 820px) {
+  .eval { padding: var(--space-5) var(--space-4) 4rem; }
+  .tradeoff { grid-template-columns: minmax(0, 1fr); }
+  .plot { border-right: none; border-bottom: 1px solid var(--border); }
+  .q-row { grid-template-columns: 1.4rem minmax(0, 1fr) 3rem; }
+  .q-row .cat, .q-row .mode, .q-row .tok { display: none; }
+  .q-detail { padding-left: var(--space-5); }
+}

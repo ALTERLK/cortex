@@ -1,0 +1,152 @@
+/* Design tokens.
+ *
+ * Layout concept: a three-pane workbench — navigation and the document
+ * library on the left, the conversation in the middle, the evidence for
+ * the selected answer on the right.
+ *
+ * Colour carries meaning in one place only: the three retrieval signals.
+ * Dense (embedding) rank, sparse (BM25) rank, and the rerank score each
+ * have a hue, used wherever that signal appears. Everything else is a
+ * blue-tinted neutral plus a single accent.
+ *
+ * Every colour is declared here on :root (light values) and redefined for
+ * dark. Component CSS only ever reads tokens, so both themes stay in sync.
+ */
+
+:root {
+  color-scheme: light;
+
+  /* surfaces */
+  --bg: #f4f6fa;
+  --surface: #ffffff;
+  --surface-2: #edf0f6;
+  --surface-3: #e3e8f1;
+  --overlay: rgba(244, 246, 250, 0.82);
+  --border: #dce1eb;
+  --border-strong: #c3cad9;
+
+  /* text */
+  --text: #111827;
+  --text-2: #475069;
+  --text-3: #76809a;
+
+  /* accent */
+  --accent: #2a63f6;
+  --accent-hover: #1f52d9;
+  --accent-contrast: #ffffff;
+  --accent-soft: rgba(42, 99, 246, 0.10);
+  --accent-ring: rgba(42, 99, 246, 0.35);
+
+  /* retrieval signals */
+  --dense: #6a55d8;
+  --dense-soft: rgba(106, 85, 216, 0.14);
+  --sparse: #b86e06;
+  --sparse-soft: rgba(184, 110, 6, 0.14);
+  --rerank: #0b9079;
+  --rerank-soft: rgba(11, 144, 121, 0.14);
+
+  /* status */
+  --ok: #0f8a5a;
+  --warn: #a8690a;
+  --warn-soft: rgba(168, 105, 10, 0.12);
+  --err: #cc3d3d;
+  --err-soft: rgba(204, 61, 61, 0.10);
+
+  --shadow-1: 0 1px 2px rgba(16, 24, 40, 0.06);
+  --shadow-2: 0 8px 28px rgba(16, 24, 40, 0.12);
+  --glow: radial-gradient(60rem 36rem at 12% -8%, rgba(42, 99, 246, 0.07), transparent 60%);
+
+  /* type */
+  --font-ui: "Inter", "Segoe UI Variable Text", "Segoe UI", -apple-system, "SF Pro Text",
+             "PingFang SC", "Microsoft YaHei UI", "Microsoft YaHei", sans-serif;
+  --font-mono: "JetBrains Mono", "Cascadia Code", "Cascadia Mono", "SF Mono", Consolas,
+               "Microsoft YaHei UI", monospace;
+  --text-xs: 0.72rem;
+  --text-sm: 0.8125rem;
+  --text-md: 0.9375rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.75rem;
+
+  /* shape and rhythm */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+
+  --sidebar-w: 272px;
+  --inspector-w: 400px;
+  --measure: 46rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #0b101a;
+    --surface: #121927;
+    --surface-2: #192234;
+    --surface-3: #212c42;
+    --overlay: rgba(11, 16, 26, 0.78);
+    --border: #222c40;
+    --border-strong: #34415c;
+    --text: #e8edf6;
+    --text-2: #a5b0c6;
+    --text-3: #6c7890;
+    --accent: #6394ff;
+    --accent-hover: #7fa7ff;
+    --accent-contrast: #081022;
+    --accent-soft: rgba(99, 148, 255, 0.14);
+    --accent-ring: rgba(99, 148, 255, 0.45);
+    --dense: #a393ff;
+    --dense-soft: rgba(163, 147, 255, 0.16);
+    --sparse: #f1aa52;
+    --sparse-soft: rgba(241, 170, 82, 0.15);
+    --rerank: #45d3b6;
+    --rerank-soft: rgba(69, 211, 182, 0.14);
+    --ok: #3fcf8e;
+    --warn: #f0b44e;
+    --warn-soft: rgba(240, 180, 78, 0.12);
+    --err: #ff7a7a;
+    --err-soft: rgba(255, 122, 122, 0.12);
+    --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.4);
+    --shadow-2: 0 12px 36px rgba(0, 0, 0, 0.5);
+    --glow: radial-gradient(60rem 36rem at 12% -8%, rgba(99, 148, 255, 0.10), transparent 60%);
+  }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0b101a;
+  --surface: #121927;
+  --surface-2: #192234;
+  --surface-3: #212c42;
+  --overlay: rgba(11, 16, 26, 0.78);
+  --border: #222c40;
+  --border-strong: #34415c;
+  --text: #e8edf6;
+  --text-2: #a5b0c6;
+  --text-3: #6c7890;
+  --accent: #6394ff;
+  --accent-hover: #7fa7ff;
+  --accent-contrast: #081022;
+  --accent-soft: rgba(99, 148, 255, 0.14);
+  --accent-ring: rgba(99, 148, 255, 0.45);
+  --dense: #a393ff;
+  --dense-soft: rgba(163, 147, 255, 0.16);
+  --sparse: #f1aa52;
+  --sparse-soft: rgba(241, 170, 82, 0.15);
+  --rerank: #45d3b6;
+  --rerank-soft: rgba(69, 211, 182, 0.14);
+  --ok: #3fcf8e;
+  --warn: #f0b44e;
+  --warn-soft: rgba(240, 180, 78, 0.12);
+  --err: #ff7a7a;
+  --err-soft: rgba(255, 122, 122, 0.12);
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-2: 0 12px 36px rgba(0, 0, 0, 0.5);
+  --glow: radial-gradient(60rem 36rem at 12% -8%, rgba(99, 148, 255, 0.10), transparent 60%);
+}

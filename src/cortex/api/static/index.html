@@ -3,109 +3,59 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Cortex — Knowledge Assistant</title>
-  <link rel="stylesheet" href="/static/styles.css">
+  <title>Cortex</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='3.2' fill='%232a63f6'/%3E%3Ccircle cx='12' cy='12' r='7.5' fill='none' stroke='%232a63f6' stroke-width='1.6' opacity='.6'/%3E%3C/svg%3E">
+  <!-- Apply a saved theme before the first paint, so the page never flashes the other one. -->
+  <script>
+    try {
+      var saved = JSON.parse(localStorage.getItem("cortex.theme"));
+      if (saved) document.documentElement.dataset.theme = saved;
+    } catch (e) { /* no saved preference: follow the system */ }
+  </script>
+  <link rel="stylesheet" href="/static/css/tokens.css">
+  <link rel="stylesheet" href="/static/css/base.css">
+  <link rel="stylesheet" href="/static/css/chat.css">
 </head>
 <body>
+  <div class="app">
+    <aside class="sidebar" id="sidebar"></aside>
 
-  <!-- NOTE (learning): the ambient background lives in its own fixed layer.
-       It never scrolls, so the browser composites it once and reuses it. -->
-  <div class="ambient" aria-hidden="true">
-    <div class="orb orb-1"></div>
-    <div class="orb orb-2"></div>
-    <div class="orb orb-3"></div>
+    <main class="main">
+      <header class="topbar">
+        <button class="icon-btn" id="menu-btn" type="button" aria-label="Menu"></button>
+        <span class="brand-name">Cortex</span>
+        <button class="icon-btn" id="inspector-btn" type="button" aria-label="Evidence" style="margin-left: auto"></button>
+      </header>
+
+      <section class="chat" id="chat" aria-live="polite"></section>
+
+      <footer class="composer-wrap">
+        <div class="col">
+          <form class="composer" id="composer">
+            <textarea id="question" rows="1" maxlength="2000" autocomplete="off"
+                      data-i18n-placeholder="composer.placeholder"></textarea>
+            <div class="composer-row">
+              <div class="segmented" role="radiogroup" aria-label="Answer mode">
+                <button type="button" role="radio" data-mode="auto" data-i18n="mode.auto"></button>
+                <button type="button" role="radio" data-mode="rag" data-i18n="mode.rag"></button>
+                <button type="button" role="radio" data-mode="agent" data-i18n="mode.agent"></button>
+              </div>
+              <span class="mode-hint" id="mode-hint"></span>
+              <button id="send" type="submit"></button>
+            </div>
+          </form>
+        </div>
+      </footer>
+    </main>
+
+    <aside class="inspector" id="inspector" hidden></aside>
+    <div class="scrim" id="scrim"></div>
   </div>
 
-  <header class="navbar glass">
-    <div class="brand">
-      <svg class="brand-mark" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
-        <circle cx="12" cy="12" r="3.2" fill="currentColor"/>
-        <circle cx="12" cy="12" r="7.5" fill="none" stroke="currentColor" stroke-width="1.4" opacity="0.55"/>
-        <circle cx="12" cy="12" r="11" fill="none" stroke="currentColor" stroke-width="1" opacity="0.25"/>
-      </svg>
-      <span class="brand-name">Cortex</span>
-    </div>
-    <div class="status">
-      <span id="status-dot" class="status-dot"></span>
-      <span id="status-text" class="status-text">connecting…</span>
-    </div>
-  </header>
+  <div class="toast" id="toast" role="status"></div>
 
-  <main id="chat" class="chat" aria-live="polite">
-    <div class="welcome">
-      <h1>Ask your knowledge base</h1>
-      <p>Answers come with citations — click <span class="cite-chip-demo">1</span> to see the source passage.</p>
-    </div>
-  </main>
-
-  <footer class="composer-wrap">
-    <form id="composer" class="composer glass">
-      <div class="mode-switch" role="radiogroup" aria-label="Answer mode">
-        <button type="button" class="mode-btn active" data-mode="rag"
-                title="Retrieve once, then answer — fast and cheap">RAG</button>
-        <button type="button" class="mode-btn" data-mode="agent"
-                title="The LLM decides when and how many times to search">Agent</button>
-      </div>
-      <input id="question" type="text" placeholder="Ask a question…"
-             autocomplete="off" spellcheck="false" maxlength="2000">
-      <button id="send" type="submit" aria-label="Send">
-        <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
-          <path d="M3.4 20.4 21 12 3.4 3.6l2.8 6.9L14 12l-7.8 1.5z" fill="currentColor"/>
-        </svg>
-      </button>
-    </form>
-  </footer>
-
-  <div id="toast" class="toast" role="alert"></div>
-
-  <!-- Templates cloned by app.js — keeps markup out of JS strings -->
-  <template id="tpl-user-msg">
-    <div class="msg msg-user"><div class="bubble bubble-user"></div></div>
-  </template>
-
-  <template id="tpl-assistant-msg">
-    <div class="msg msg-assistant">
-      <div class="bubble bubble-assistant">
-        <div class="tools"></div>
-        <div class="answer"></div>
-        <div class="sources"></div>
-        <div class="stats"></div>
-      </div>
-    </div>
-  </template>
-
-  <template id="tpl-tool-card">
-    <details class="tool-card glass-card">
-      <summary>
-        <svg viewBox="0 0 24 24" width="13" height="13" aria-hidden="true" class="tool-icon">
-          <circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/>
-          <path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-        </svg>
-        <span class="tool-query"></span>
-      </summary>
-      <p class="tool-result"></p>
-    </details>
-  </template>
-
-  <template id="tpl-typing">
-    <div class="msg msg-assistant" id="typing">
-      <div class="bubble bubble-assistant typing">
-        <span class="dot"></span><span class="dot"></span><span class="dot"></span>
-      </div>
-    </div>
-  </template>
-
-  <template id="tpl-source-card">
-    <details class="source-card glass-card">
-      <summary>
-        <span class="source-num"></span>
-        <span class="source-name"></span>
-        <span class="source-score"></span>
-      </summary>
-      <p class="source-text"></p>
-    </details>
-  </template>
-
-  <script src="/static/app.js"></script>
+  <script src="/static/vendor/marked.min.js"></script>
+  <script src="/static/vendor/purify.min.js"></script>
+  <script type="module" src="/static/js/app.js"></script>
 </body>
 </html>
