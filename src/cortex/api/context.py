@@ -1,10 +1,9 @@
 """Per-request context shared between middleware and route handlers.
 
-NOTE (learning): a ContextVar is like a thread-local that also works with
-async tasks (and propagates into the threadpool Starlette uses for sync
-handlers). The middleware sets the request id once; any log line anywhere
-in the request's call stack can read it — no need to thread a request_id
-parameter through every function signature.
+A ContextVar behaves like a thread-local that also follows async tasks and
+propagates into the threadpool Starlette uses for sync handlers. The
+middleware sets the request id once; any log line emitted while handling
+that request can read it, without passing a request_id through every call.
 """
 
 from contextvars import ContextVar

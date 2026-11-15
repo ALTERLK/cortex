@@ -1,20 +1,16 @@
 """Expose Cortex as an MCP server.
 
 MCP (Model Context Protocol) is the open standard that lets AI clients —
-Claude Code, Claude Desktop, IDEs — call external tools. By exposing the
-knowledge base as MCP tools, any MCP client can search your documents or
+coding assistants, desktop apps, IDEs — call external tools. Exposing the
+knowledge base as MCP tools lets any such client search the documents or
 get cited answers without going through the web API.
 
-NOTE (learning): compare this file with api/routes.py — same underlying
-components (Retriever, Generator), different transport. That is the payoff
-of keeping retrieval logic out of the API layer: adding a whole new
-protocol is ~100 lines of glue.
+This file and the HTTP API share every component underneath (retriever,
+generator) and differ only in transport — retrieval logic lives outside
+both, so a second protocol is about a hundred lines of glue.
 
 Run (stdio transport, started by the MCP client itself):
     uv run python scripts/mcp_serve.py
-
-Register with Claude Code:
-    claude mcp add cortex -- uv run --directory <repo-path> python scripts/mcp_serve.py
 """
 
 from __future__ import annotations
@@ -32,31 +28,34 @@ os.environ.setdefault("TRANSFORMERS_VERBOSITY", "error")
 
 from mcp.server.fastmcp import FastMCP
 
+from cortex.config import get_settings
 from cortex.ingest.embedder import Embedder
 from cortex.ingest.store import VectorStore
 from cortex.llm import get_llm_client
 from cortex.llm.postprocess import strip_thinking
+from cortex.rag.factory import build_retriever
 from cortex.rag.generator import Generator
-from cortex.rag.retriever import Retriever
 
 mcp = FastMCP("cortex")
 
-# Lazy singletons: the embedding model (~2 s load) is only paid for on the
-# first tool call, so `claude mcp list` style handshakes stay instant.
-_retriever: Retriever | None = None
+# Lazy singletons: the embedding model is only loaded on the first tool
+# call, so the client's initial handshake (listing tools) stays instant.
+_retriever: object | None = None
 _generator: Generator | None = None
 
 
-def _get_retriever() -> Retriever:
+def _get_retriever() -> object:
     global _retriever
     if _retriever is None:
+        settings = get_settings()
         t0 = time.time()
+        # Diagnostics go to stderr: stdout carries the protocol.
         print("[cortex-mcp] loading embedder…", file=sys.stderr, flush=True)
         embedder = Embedder()
-        print(f"[cortex-mcp] embedder ready in {time.time() - t0:.1f}s", file=sys.stderr, flush=True)
-        store = VectorStore(path="data/qdrant")
+        store = VectorStore(path=settings.store_path)
         store.ensure_collection(embedder.dimension)
-        _retriever = Retriever(store, embedder)
+        # Same retrieval strategy as the web API, from the same config.
+        _retriever = build_retriever(store, embedder, settings.retrieval_mode)
         print(f"[cortex-mcp] retriever ready in {time.time() - t0:.1f}s", file=sys.stderr, flush=True)
     return _retriever
 
