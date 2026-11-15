@@ -1,8 +1,8 @@
 """Tests for the LLM abstraction layer.
 
-NOTE (learning): none of these tests touch the network. We test *our*
-logic (the interface contract, config loading, error handling), not
-the LLM provider's servers. Live connectivity is covered by scripts/smoke_test.py.
+None of these tests touch the network: they cover our own logic (the
+interface contract, config loading, error handling), not the provider's
+servers. Live connectivity is checked by scripts/check_llm.py.
 """
 
 from typing import Any

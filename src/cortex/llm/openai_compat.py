@@ -1,19 +1,18 @@
 """Adapter for any OpenAI-compatible LLM endpoint.
 
-Works with DeepSeek, Claude via 4SAPI, OpenRouter, or any provider
-that exposes an OpenAI-compatible chat completions API. This adapter's
-whole job is:
+Works with DeepSeek, OpenRouter, or any other provider or gateway that
+exposes an OpenAI-compatible chat completions API. This adapter's whole
+job is:
 
 1. authenticate and send the request,
 2. map the provider's response object into our `LLMResponse`.
 
-Nothing outside this file should import the `openai` SDK.
+Nothing outside this file imports the `openai` SDK.
 
-NOTE (learning): "OpenAI-compatible" means the provider copied OpenAI's
-HTTP API contract (same endpoints, same JSON shapes). The `openai` Python
-SDK lets you point it at a different server with just `base_url=...` — so
-the exact same code works for DeepSeek, Claude via 4SAPI, or GPT. That
-is the whole reason we set LLM_BASE_URL in .env instead of hardcoding it.
+"OpenAI-compatible" means the provider implements OpenAI's HTTP contract —
+same endpoints, same JSON shapes — so the `openai` SDK can talk to it with
+only `base_url` changed. That is why the provider is selected by
+LLM_BASE_URL and LLM_MODEL in .env rather than by code.
 """
 
 import json
@@ -42,10 +41,9 @@ class OpenAICompatibleClient:
             raise MissingAPIKeyError(
                 "LLM_API_KEY is not set. Copy .env.example to .env and fill in your key."
             )
-        # NOTE (learning): explicit timeout + bounded retries are the minimum
-        # resilience for any network dependency. Without a timeout, one hung
-        # provider connection pins a worker thread forever; the SDK retries
-        # transient failures (connection errors, 5xx) with backoff.
+        # An explicit timeout and bounded retries: without a timeout, one
+        # hung provider connection pins a worker thread indefinitely. The
+        # SDK retries transient failures (connection errors, 5xx) with backoff.
         self._client = OpenAI(
             api_key=api_key, base_url=base_url,
             timeout=timeout_s, max_retries=max_retries,
@@ -71,10 +69,8 @@ class OpenAICompatibleClient:
 
         choice = response.choices[0]
 
-        # NOTE (learning): the provider returns tool arguments as a JSON
-        # *string*; we parse it once here so the rest of the codebase only
-        # ever sees a dict. Centralizing quirks like this is exactly what
-        # an adapter is for.
+        # The provider returns tool arguments as a JSON *string*; it is
+        # parsed once here so the rest of the codebase only ever sees a dict.
         tool_calls = [
             ToolCall(
                 id=tc.id,
@@ -102,11 +98,10 @@ class OpenAICompatibleClient:
         *,
         temperature: float = 0.3,
     ) -> Iterator[str | LLMResponse]:
-        # NOTE (learning): stream=True makes the API return Server-Sent
-        # Events; the SDK turns them into an iterator of chunks, each
-        # carrying a small "delta" of the answer. stream_options asks the
-        # provider to append one final chunk with token usage (some
-        # OpenAI-compatible proxies omit it — we fall back to zeros).
+        # With stream=True the SDK yields chunks, each carrying a small
+        # "delta" of the answer. stream_options asks the provider to append
+        # one final chunk with token usage; some OpenAI-compatible gateways
+        # omit it, in which case usage stays at zero.
         parts: list[str] = []
         usage = TokenUsage(0, 0)
         finish = "stop"

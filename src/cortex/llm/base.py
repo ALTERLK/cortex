@@ -12,11 +12,11 @@ Instead, the whole project programs against two things defined here:
 2. `LLMResponse` — the *normalized* response every provider maps into.
 
 Requests use the OpenAI chat-message format (`[{"role": ..., "content":
-...}]`) because it is the de-facto industry standard that DeepSeek and
-most providers accept natively; only responses need normalizing.
+...}]`) because it is the de-facto industry standard that most providers
+accept natively; only responses need normalizing.
 
-NOTE (learning): this is the "ports and adapters" (hexagonal) pattern —
-`base.py` is the port, `deepseek.py` is one adapter.
+This is the ports-and-adapters pattern: this module is the port, and
+`openai_compat.py` is one adapter.
 """
 
 from collections.abc import Iterator
@@ -27,9 +27,9 @@ from typing import Any, Protocol
 class LLMUnavailableError(RuntimeError):
     """The provider could not service the request (network error, timeout, 5xx).
 
-    NOTE (learning): adapters translate vendor-specific exceptions into this
-    one type, so the API layer can map "any provider problem" to a clean
-    502 response without importing any vendor SDK.
+    Adapters translate vendor-specific exceptions into this one type, so the
+    API layer can map any provider problem to a clean 502 response without
+    importing a vendor SDK.
     """
 
 
@@ -47,7 +47,7 @@ class TokenUsage:
 
 @dataclass(frozen=True)
 class ToolCall:
-    """One tool invocation requested by the model (used from M4 onwards)."""
+    """One tool invocation requested by the model."""
 
     id: str
     name: str
@@ -61,7 +61,7 @@ class LLMResponse:
     content: str | None
     tool_calls: list[ToolCall] = field(default_factory=list)
     # "stop" = model finished its answer; "tool_calls" = model wants us to
-    # run a tool and report back. The agent loop (M4) branches on this.
+    # run a tool and report back. The agent loop branches on this.
     finish_reason: str = "stop"
     usage: TokenUsage = field(default_factory=lambda: TokenUsage(0, 0))
 
@@ -73,9 +73,9 @@ class LLMResponse:
 class LLMClient(Protocol):
     """What every LLM provider adapter must look like.
 
-    NOTE (learning): `Protocol` means structural typing — any class with a
-    matching `chat` method satisfies this interface, no inheritance needed.
-    That also makes faking it in tests trivial (see tests/test_llm_base.py).
+    A `Protocol` is checked structurally: any class with matching methods
+    satisfies it, with no inheritance. Adapters stay decoupled from this
+    module, and a test fake is just a plain class (see tests/test_llm_base.py).
     """
 
     def chat(
@@ -108,9 +108,9 @@ class LLMClient(Protocol):
         which is the complete normalized `LLMResponse` (full content + usage).
         Callers display the deltas and read usage from the final item.
 
-        NOTE (learning): no `tools` parameter on purpose — streaming
-        tool-call fragments is a protocol rabbit hole. The agent loop uses
-        non-streaming chat() for its iterations; streaming is for final
-        answer generation only.
+        There is deliberately no `tools` parameter: a streamed tool call
+        arrives as JSON fragments that must be reassembled before anything
+        can run. The agent loop uses non-streaming chat() for its steps and
+        streaming is reserved for answer generation.
         """
         ...
