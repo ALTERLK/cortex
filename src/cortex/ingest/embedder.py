@@ -3,10 +3,8 @@
 Converts a list of strings into a list of normalised float vectors ready for
 cosine-similarity search.
 
-NOTE (learning): we normalise embeddings to unit length (normalize_embeddings=True)
-so that cosine similarity reduces to a simple dot product — faster and numerically
-identical. Always normalise when using cosine distance; skip it only for dot-product
-distance stores.
+Embeddings are normalised to unit length, so cosine similarity reduces to a
+dot product — the same ranking, computed faster.
 """
 
 from __future__ import annotations
@@ -36,8 +34,8 @@ class Embedder:
     DEFAULT_MODEL = "BAAI/bge-m3"
 
     def __init__(self, model_name: str = DEFAULT_MODEL) -> None:
-        # NOTE (learning): lazy import keeps startup fast for code paths that
-        # don't need embeddings (e.g. the LLM smoke test).
+        # Imported lazily: sentence-transformers pulls in torch, which code
+        # paths that never embed (the LLM check, the tests) should not pay for.
         from sentence_transformers import SentenceTransformer
 
         self._model = SentenceTransformer(model_name)

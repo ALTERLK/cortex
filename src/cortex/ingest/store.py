@@ -2,18 +2,18 @@
 
 Handles collection management, idempotent upserts, and similarity search.
 All Qdrant SDK calls are confined to this file — the rest of the codebase
-sees only plain Python dicts.
+only sees `SearchResult` objects.
 
-NOTE (learning): we use Qdrant's *local file* mode (QdrantClient(path=...)),
-which stores the index on disk without requiring a running Docker container.
-The API is identical to the Docker/cloud modes — swapping later is a one-line
-config change.
+Qdrant runs in *local file* mode (`QdrantClient(path=...)`): the index lives
+on disk and no server process is needed. The client API is identical to the
+server and cloud modes, so moving to a hosted Qdrant is a constructor change.
 """
 
 from __future__ import annotations
 
 import hashlib
 import uuid
+from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -22,14 +22,31 @@ from cortex.ingest.chunker import Chunk
 COLLECTION_NAME = "cortex"
 
 
+@dataclass(frozen=True)
+class RetrievalTrace:
+    """How one passage reached the final result list.
+
+    Each retrieval stage fills in the fields it knows about, so the API can
+    show *why* a passage was returned: its rank in the dense list, its rank
+    in the BM25 list, the fused RRF score, and the cross-encoder score.
+    A field is None when that stage did not run or did not return the passage.
+    """
+
+    dense_rank: int | None = None
+    sparse_rank: int | None = None
+    rrf_score: float | None = None
+    rerank_score: float | None = None
+
+
 @dataclass
 class SearchResult:
-    """A single hit returned by the vector store."""
+    """A single passage returned by a retriever."""
 
-    score: float      # cosine similarity in [−1, 1]; higher is more similar
+    score: float      # stage-specific: cosine similarity, RRF score, or rerank score
     text: str         # chunk text
-    source: str       # origin filename
+    source: str       # path of the origin file, relative to the ingest root
     chunk_index: int  # position within that file
+    trace: RetrievalTrace | None = None
 
 
 class VectorStore:
@@ -73,11 +90,7 @@ class VectorStore:
 
         Each point ID is a deterministic UUID derived from (source, chunk_index),
         so re-ingesting the same file overwrites existing vectors instead of
-        creating duplicates.
-
-        NOTE (learning): this "idempotent write" pattern is essential for any
-        pipeline that might re-run on the same data. Using a content-derived ID
-        means the same logical chunk always maps to the same storage slot.
+        creating duplicates — the write is idempotent.
         """
         from qdrant_client.models import PointStruct
 
@@ -97,8 +110,7 @@ class VectorStore:
 
     def search(self, query_vector: list[float], top_k: int = 5) -> list[SearchResult]:
         """Return the top-k most similar chunks for a query vector."""
-        # NOTE (learning): qdrant-client >=1.7 replaced client.search() with
-        # client.query_points(); the result is a QueryResponse with a .points list.
+        # qdrant-client >= 1.7 replaced client.search() with query_points().
         response = self._client.query_points(
             collection_name=COLLECTION_NAME,
             query=query_vector,
@@ -144,28 +156,58 @@ class VectorStore:
         return out
 
     def list_sources(self) -> list[str]:
-        """Return the distinct source filenames in the collection.
+        """Return the distinct source paths in the collection, sorted."""
+        return sorted(self.source_counts())
 
-        NOTE (learning): scroll() pages through points WITHOUT a similarity
-        query — the right tool for "give me everything". The previous
-        implementation searched with a zero vector, which silently broke
-        beyond its top_k limit.
+    def source_counts(self) -> dict[str, int]:
+        """Return {source: number of chunks} for every indexed document.
+
+        Uses scroll(), which pages through points without a similarity query;
+        only the `source` payload field is fetched.
         """
-        sources: set[str] = set()
+        counts: Counter[str] = Counter()
         offset = None
         while True:
             points, offset = self._client.scroll(
                 collection_name=COLLECTION_NAME,
-                limit=256,
+                limit=512,
                 offset=offset,
                 with_payload=["source"],
                 with_vectors=False,
             )
-            sources.update(p.payload.get("source", "") for p in points)
+            counts.update(p.payload.get("source", "") for p in points)
             if offset is None:
                 break
-        sources.discard("")
-        return sorted(sources)
+        counts.pop("", None)
+        return dict(counts)
+
+    def get_chunks(self, source: str, first: int, last: int) -> list[SearchResult]:
+        """Return the chunks of *source* with first <= chunk_index <= last, in order.
+
+        Lets a caller read the text around a hit instead of searching again.
+        """
+        from qdrant_client.models import FieldCondition, Filter, MatchValue, Range
+
+        points, _ = self._client.scroll(
+            collection_name=COLLECTION_NAME,
+            scroll_filter=Filter(must=[
+                FieldCondition(key="source", match=MatchValue(value=source)),
+                FieldCondition(key="chunk_index", range=Range(gte=first, lte=last)),
+            ]),
+            limit=max(last - first + 1, 1),
+            with_payload=True,
+            with_vectors=False,
+        )
+        chunks = [
+            SearchResult(
+                score=0.0,
+                text=p.payload.get("text", ""),
+                source=p.payload.get("source", ""),
+                chunk_index=p.payload.get("chunk_index", -1),
+            )
+            for p in points
+        ]
+        return sorted(chunks, key=lambda c: c.chunk_index)
 
     def get_file_hash(self, source: str) -> str | None:
         """Return the stored content hash for *source*, or None if absent."""
@@ -185,9 +227,8 @@ class VectorStore:
     def delete_source(self, source: str) -> None:
         """Delete every chunk belonging to *source*.
 
-        NOTE (learning): required for correct re-ingest — if a file shrinks
-        from 10 chunks to 6, idempotent upserts alone would leave chunks 7-10
-        stale in the index. Delete-then-write keeps the index exact.
+        Required for correct re-ingest: if a file shrinks from 10 chunks to 6,
+        idempotent upserts alone would leave chunks 7-10 stale in the index.
         """
         from qdrant_client.models import FieldCondition, Filter, FilterSelector, MatchValue
 

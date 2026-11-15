@@ -1,19 +1,20 @@
 """Hand-written BM25 sparse index.
 
 Why hand-written instead of a library (rank_bm25, fastembed, Qdrant sparse
-vectors)? This project's rule is that every retrieval component must be
-explainable line by line — BM25 is ~80 lines and is THE classic lexical
-ranking function, so it earns its place as readable code.
+vectors)? BM25 is about eighty lines, and owning them means the tokenizer —
+the part that decides whether Chinese text is searchable at all — is ours
+to control.
 
-NOTE (learning): BM25 scores a document for a query as
+BM25 scores a document for a query as
 
     sum over query terms t of:
         IDF(t) * tf * (k1 + 1) / (tf + k1 * (1 - b + b * dl / avgdl))
 
 where tf = term frequency in the doc, dl = doc length, avgdl = average doc
-length. k1 (~1.5) controls term-frequency saturation: the 2nd occurrence of
-a word matters less than the 1st. b (~0.75) controls length normalisation:
-long documents get penalised so they can't win just by containing everything.
+length. k1 (~1.5) controls term-frequency saturation: the second occurrence
+of a word matters less than the first. b (~0.75) controls length
+normalisation: long documents are penalised so they cannot win just by
+containing everything.
 """
 
 from __future__ import annotations

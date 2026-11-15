@@ -8,9 +8,9 @@ characters. The strategy:
   2. _merge_with_overlap: greedily pack pieces into chunks up to chunk_size,
      then carry back `overlap` characters into the next chunk's starting set.
 
-NOTE (learning): overlap exists because a complete sentence might straddle a
-chunk boundary. By repeating the tail of the previous chunk at the head of the
-next one, we ensure at least one chunk contains the full sentence.
+Overlap exists because a sentence can straddle a chunk boundary. Repeating
+the tail of one chunk at the head of the next ensures at least one chunk
+contains the whole sentence.
 """
 
 from dataclasses import dataclass, field
@@ -100,9 +100,8 @@ class RecursiveCharacterChunker:
             if len(stripped) <= self.chunk_size:
                 pieces.append(stripped)
             elif rest:
-                # NOTE (learning): this is the "recursive" part — we fall back
-                # to a finer separator only when the current one leaves pieces
-                # that are still too large.
+                # The recursive step: fall back to a finer separator only
+                # for pieces the current separator left too large.
                 pieces.extend(self._split_text(stripped, rest))
             else:
                 # No separators left; force-split by character.
@@ -126,8 +125,9 @@ class RecursiveCharacterChunker:
                 chunks.append("\n".join(current))
 
                 # Trim from the front until we're within the overlap budget.
-                # NOTE (learning): we pop whole pieces, so actual overlap may
-                # be slightly less than `self.overlap` — that is acceptable.
+                # Whole pieces are dropped, so the actual overlap can be a
+                # little under `self.overlap`; splitting a piece to hit the
+                # number exactly would cut a sentence in half.
                 while current and cur_len > self.overlap:
                     current.pop(0)
                     cur_len = (

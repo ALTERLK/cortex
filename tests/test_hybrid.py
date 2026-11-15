@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import pytest
+
 from cortex.ingest.store import SearchResult
 from cortex.rag.bm25 import BM25Index, tokenize
 from cortex.rag.hybrid import HybridRetriever
@@ -132,6 +134,41 @@ def test_hybrid_respects_top_k_override() -> None:
     assert len(retriever.retrieve("parameters", top_k=2)) == 2
 
 
+def test_hybrid_records_where_each_result_ranked() -> None:
+    chunks = [chunk(i, text) for i, text in enumerate(DOCS)]
+    store = _FakeStore(chunks, dense_order=[3, 1, 2, 0])
+    results = HybridRetriever(store, _FakeEmbedder(), top_k=4).retrieve("uv cache")
+
+    by_source = {r.source: r.trace for r in results}
+    # doc1 was found by both retrievers: dense #2 and sparse #1.
+    assert by_source["doc1.md"].dense_rank == 2
+    assert by_source["doc1.md"].sparse_rank == 1
+    assert by_source["doc1.md"].rrf_score == pytest.approx(1 / 62 + 1 / 61, abs=1e-6)
+    # doc3 was dense #1 and absent from the sparse list.
+    assert by_source["doc3.md"].dense_rank == 1
+    assert by_source["doc3.md"].sparse_rank is None
+    # The reported score is the RRF score.
+    assert results[0].score == results[0].trace.rrf_score
+
+
+def test_hybrid_refresh_picks_up_new_documents() -> None:
+    chunks = [chunk(i, text) for i, text in enumerate(DOCS)]
+    store = _FakeStore(chunks, dense_order=[0, 1, 2, 3])
+    retriever = HybridRetriever(store, _FakeEmbedder(), top_k=5)
+    assert all(r.source != "new.md" for r in retriever.retrieve("zebra quokka"))
+
+    # A document is added to the store after the retriever was built. Dense
+    # search does not return it here, so only BM25 can surface it.
+    store._chunks = [*chunks, SearchResult(0.0, "zebra quokka wombat", "new.md", 0)]
+    assert all(r.source != "new.md" for r in retriever.retrieve("zebra quokka"))  # stale index
+
+    retriever.refresh()
+    found = {r.source: r for r in retriever.retrieve("zebra quokka")}
+    assert "new.md" in found
+    assert found["new.md"].trace.sparse_rank == 1
+    assert found["new.md"].trace.dense_rank is None
+
+
 # ---------------------------------------------------------------------------
 # RerankingRetriever (two-stage)
 # ---------------------------------------------------------------------------
@@ -165,3 +202,41 @@ def test_reranking_retriever_fetches_candidates_then_truncates() -> None:
     assert base.last_top_k == 20          # wide candidate fetch
     assert len(results) == 5              # narrow final cut
     assert results[0].source == "doc19.md"  # reranker reordered
+
+
+def test_reranker_adds_its_score_to_the_existing_trace() -> None:
+    from cortex.ingest.store import RetrievalTrace
+    from cortex.rag.reranker import Reranker
+
+    class _FakeCrossEncoder:
+        def predict(self, pairs):
+            return [0.1, 0.9]  # the second candidate is the better match
+
+    reranker = Reranker.__new__(Reranker)  # skip __init__: no model download
+    reranker._model = _FakeCrossEncoder()
+    candidates = [
+        SearchResult(0.03, "a", "a.md", 0, RetrievalTrace(dense_rank=1, rrf_score=0.03)),
+        SearchResult(0.02, "b", "b.md", 0, RetrievalTrace(sparse_rank=1, rrf_score=0.02)),
+    ]
+    best = reranker.rerank("q", candidates, top_k=1)[0]
+
+    assert best.source == "b.md"
+    assert best.score == pytest.approx(0.9)
+    # The upstream ranks survive; the rerank score is added alongside them.
+    assert best.trace == RetrievalTrace(sparse_rank=1, rrf_score=0.02, rerank_score=0.9)
+
+
+def test_reranking_retriever_refresh_reaches_the_base() -> None:
+    from cortex.rag.reranker import RerankingRetriever
+
+    class _Base:
+        refreshed = 0
+
+        def refresh(self) -> None:
+            self.refreshed += 1
+
+    base = _Base()
+    RerankingRetriever(base, _ReverseReranker()).refresh()
+    assert base.refreshed == 1
+    # A base without refresh() (the dense retriever) is simply left alone.
+    RerankingRetriever(_ListRetriever([]), _ReverseReranker()).refresh()

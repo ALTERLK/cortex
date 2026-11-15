@@ -82,7 +82,12 @@ def test_retriever_returns_store_results() -> None:
     expected = [make_result(source="a.md", idx=0), make_result(source="b.md", idx=1)]
     store = FakeStore(expected)
     results = Retriever(store, FakeEmbedder()).retrieve("query")
-    assert results == expected
+    assert [(r.source, r.chunk_index, r.text) for r in results] == [
+        ("a.md", 0, "Some text."), ("b.md", 1, "Some text."),
+    ]
+    # Each result records its position in the dense ranking.
+    assert [r.trace.dense_rank for r in results] == [1, 2]
+    assert results[0].trace.sparse_rank is None
 
 
 # ---------------------------------------------------------------------------

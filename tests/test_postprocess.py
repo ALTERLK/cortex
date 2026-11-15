@@ -27,6 +27,17 @@ def test_strip_multiline_block() -> None:
     assert strip_thinking(text) == "Answer."
 
 
+def test_strip_accepts_tag_spelling_variants() -> None:
+    # The same model has emitted each of these spellings.
+    for name in ("thinking", "antthinking", "anthinking", "Thinking"):
+        assert strip_thinking(f"<{name}>plan</{name}>\nAnswer [1].") == "Answer [1]."
+
+
+def test_strip_leaves_other_tags_alone() -> None:
+    text = "Use the <code>thinking</code> flag and <b>bold</b>."
+    assert strip_thinking(text) == text
+
+
 # ---------------------------------------------------------------------------
 # ThinkingStreamFilter (token streams)
 # ---------------------------------------------------------------------------
@@ -64,6 +75,21 @@ def test_filter_false_alarm_partial_tag() -> None:
     # "<th" looks like a tag start but turns out to be plain text;
     # flush() must release it.
     assert run_filter(["a < b and ", "<th", "is is fine"]) == "a < b and <this is fine"
+
+
+def test_filter_handles_tag_spelling_variants() -> None:
+    assert run_filter(["<anthi", "nking>secret</anth", "inking>\nVisible."]) == "Visible."
+    assert run_filter(list("<antthinking>abc</antthinking>Done.")) == "Done."
+
+
+def test_filter_passes_ordinary_markup_through() -> None:
+    # Angle brackets that are not reasoning tags must come out unchanged,
+    # including when a tag is split across chunks.
+    assert run_filter(["List<int> x; a <", "b> c </", "b> if a < b"]) == "List<int> x; a <b> c </b> if a < b"
+
+
+def test_filter_trailing_angle_bracket_is_released_on_flush() -> None:
+    assert run_filter(["value <"]) == "value <"
 
 
 def test_filter_unterminated_block_dropped() -> None:

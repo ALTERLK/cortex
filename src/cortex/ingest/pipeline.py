@@ -12,15 +12,14 @@ Usage::
     n = ingest_directory(Path("my_docs"), store, embedder)
     print(f"Ingested {n} chunks.")
 
-NOTE (learning): this function is intentionally *not* async and *not* batched
-across files — clarity over performance at this stage. When the corpus grows
-to thousands of files, batching embed() calls across chunks from multiple
-files would be the first optimization.
+Files are embedded one at a time. Batching embed() calls across files would
+be the first optimisation for a corpus of thousands of documents.
 """
 
 from __future__ import annotations
 
 import hashlib
+from collections.abc import Callable
 from pathlib import Path
 
 from cortex.ingest.chunker import RecursiveCharacterChunker
@@ -37,6 +36,8 @@ def ingest_directory(
     chunk_size: int = 400,
     overlap: int = 50,
     verbose: bool = True,
+    source_prefix: str = "",
+    on_progress: Callable[[int, int], None] | None = None,
 ) -> int:
     """Load, chunk, embed, and upsert all documents in *directory*.
 
@@ -46,12 +47,16 @@ def ingest_directory(
     written, so a file that shrinks never leaves stale chunks behind.
 
     Args:
-        directory:  Root folder to walk (recursively).
-        store:      Pre-initialised VectorStore with an existing collection.
-        embedder:   Pre-initialised Embedder.
-        chunk_size: Characters per chunk.
-        overlap:    Overlap between consecutive chunks.
-        verbose:    Print one line per file if True.
+        directory:     Root folder to walk (recursively).
+        store:         Pre-initialised VectorStore with an existing collection.
+        embedder:      Pre-initialised Embedder.
+        chunk_size:    Characters per chunk.
+        overlap:       Overlap between consecutive chunks.
+        verbose:       Print one line per file if True.
+        source_prefix: Prepended to every source label, e.g. "uploads/", so
+                       files from different roots cannot collide.
+        on_progress:   Called as on_progress(files_done, files_total) after
+                       each file, so a caller can report progress.
 
     Returns:
         Total number of chunks ingested (skipped files contribute 0).
@@ -63,11 +68,13 @@ def ingest_directory(
     patterns = ["**/*.md", "**/*.txt", "**/*.pdf"]
     paths = sorted({p for pattern in patterns for p in directory.glob(pattern)})
 
-    for path in paths:
+    for done, path in enumerate(paths, 1):
+        if on_progress is not None:
+            on_progress(done - 1, len(paths))
         # Source label = path relative to the ingest root, so files with the
         # same name in different folders (en/index.md vs zh/index.md) stay
         # distinct in citations and in the index.
-        source = path.relative_to(directory).as_posix()
+        source = source_prefix + path.relative_to(directory).as_posix()
         file_hash = hashlib.sha256(path.read_bytes()).hexdigest()
 
         if store.get_file_hash(source) == file_hash:
@@ -100,6 +107,8 @@ def ingest_directory(
         if verbose:
             print(f"  [ok] {source}: {len(chunks)} chunks")
 
+    if on_progress is not None:
+        on_progress(len(paths), len(paths))
     if verbose and skipped:
         print(f"  ({skipped} unchanged files skipped)")
     return total

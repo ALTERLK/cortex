@@ -1,8 +1,12 @@
-"""Post-processing for LLM output: removing <thinking> blocks.
+"""Post-processing for LLM output: removing reasoning blocks.
 
-Extended-thinking models (e.g. claude-*-thinking via an OpenAI-compatible
-proxy) emit their reasoning inside <thinking>...</thinking> tags in the
-content. Users should never see those — they are scratch work, not answer.
+Some reasoning models, served through an OpenAI-compatible endpoint, emit
+their reasoning inline as <thinking>...</thinking> in the content. Users
+should never see it — it is scratch work, not the answer.
+
+The tag is not reliably spelled: the same model has been observed emitting
+<thinking>, <antthinking>, and <anthinking>. The patterns below accept any
+short alphabetic prefix before "thinking" instead of one exact string.
 
 Two tools, one job:
   - strip_thinking():       for complete strings (non-streaming responses)
@@ -14,33 +18,37 @@ from __future__ import annotations
 
 import re
 
-_THINKING_RE = re.compile(r"<thinking>.*?</thinking>\s*", flags=re.DOTALL)
-
-_OPEN = "<thinking>"
-_CLOSE = "</thinking>"
+_NAME = r"[a-z]{0,4}thinking"
+_OPEN = re.compile(rf"<{_NAME}>", re.IGNORECASE)
+_CLOSE = re.compile(rf"</{_NAME}>", re.IGNORECASE)
+_BLOCK = re.compile(rf"<{_NAME}>.*?</{_NAME}>\s*", re.IGNORECASE | re.DOTALL)
+# An unfinished tag at the very end of a buffer: "<", "</", "<thi", "</antth"…
+# Long enough for the longest tag accepted above, minus its closing ">".
+_PARTIAL_TAG = re.compile(r"</?[a-z]{0,12}", re.IGNORECASE)
 
 
 def strip_thinking(text: str) -> str:
-    """Remove all <thinking>...</thinking> blocks from a complete string."""
-    return _THINKING_RE.sub("", text).strip()
+    """Remove all reasoning blocks from a complete string."""
+    return _BLOCK.sub("", text).strip()
 
 
-def _partial_tag_suffix(text: str, tag: str) -> int:
-    """Length of the longest suffix of *text* that is a proper prefix of *tag*.
+def _partial_tag_suffix(text: str) -> int:
+    """Length of the trailing fragment of *text* that could still become a tag.
 
-    NOTE (learning): this is the heart of stream filtering. If the buffer ends
-    in "<thi", we cannot emit it yet — the next chunk might complete the tag.
-    We hold back exactly that many characters and emit the rest.
+    This is what makes stream filtering correct. If the buffer ends in
+    "<thi" it cannot be emitted yet — the next chunk might complete the tag.
+    That fragment is held back and everything before it is emitted. Once
+    more text arrives, the fragment either completes a tag or turns out to
+    be ordinary text ("<this") and is released.
     """
-    max_len = min(len(text), len(tag) - 1)
-    for k in range(max_len, 0, -1):
-        if tag.startswith(text[-k:]):
-            return k
-    return 0
+    start = text.rfind("<")
+    if start == -1 or not _PARTIAL_TAG.fullmatch(text, start):
+        return 0
+    return len(text) - start
 
 
 class ThinkingStreamFilter:
-    """Stateful filter that strips <thinking> blocks from a stream of deltas.
+    """Stateful filter that strips reasoning blocks from a stream of deltas.
 
     Usage::
 
@@ -64,18 +72,18 @@ class ThinkingStreamFilter:
 
         while True:
             if self._inside:
-                idx = self._buf.find(_CLOSE)
-                if idx == -1:
-                    # Still inside the block: discard thinking content, but
-                    # keep a tail that could be the start of the closing tag.
-                    keep = _partial_tag_suffix(self._buf, _CLOSE)
+                close = _CLOSE.search(self._buf)
+                if close is None:
+                    # Still inside the block: discard the reasoning, but keep
+                    # a tail that could be the start of the closing tag.
+                    keep = _partial_tag_suffix(self._buf)
                     self._buf = self._buf[len(self._buf) - keep:] if keep else ""
                     break
-                self._buf = self._buf[idx + len(_CLOSE):]
+                self._buf = self._buf[close.end():]
                 self._inside = False
                 # Whitespace right after a block is formatting noise (the
                 # model usually puts a newline there) — same as the \s* in
-                # strip_thinking's regex.
+                # the whole-string pattern.
                 self._strip_ws = True
             else:
                 if self._strip_ws:
@@ -83,15 +91,14 @@ class ThinkingStreamFilter:
                     if not self._buf:
                         break  # all whitespace so far; keep waiting
                     self._strip_ws = False
-                idx = self._buf.find(_OPEN)
-                if idx == -1:
-                    keep = _partial_tag_suffix(self._buf, _OPEN)
-                    emit_until = len(self._buf) - keep
+                opening = _OPEN.search(self._buf)
+                if opening is None:
+                    emit_until = len(self._buf) - _partial_tag_suffix(self._buf)
                     out.append(self._buf[:emit_until])
                     self._buf = self._buf[emit_until:]
                     break
-                out.append(self._buf[:idx])
-                self._buf = self._buf[idx + len(_OPEN):]
+                out.append(self._buf[:opening.start()])
+                self._buf = self._buf[opening.end():]
                 self._inside = True
 
         return "".join(out)
@@ -100,7 +107,7 @@ class ThinkingStreamFilter:
         """Emit whatever is still buffered at end of stream.
 
         A held-back partial tag that never completed was real text after all;
-        an unterminated <thinking> block is dropped entirely.
+        an unterminated reasoning block is dropped entirely.
         """
         rest = "" if self._inside else self._buf
         self._buf = ""

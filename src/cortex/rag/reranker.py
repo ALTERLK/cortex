@@ -1,19 +1,18 @@
 """Cross-encoder reranker: re-score retrieved candidates with a stronger model.
 
-NOTE (learning): bi-encoders (BGE-M3) embed query and document SEPARATELY,
-so similarity is a cheap dot product over precomputed vectors — that's what
-makes search over thousands of chunks fast. A cross-encoder reads the query
-and the document TOGETHER through one transformer, which is far more
-accurate but far too slow to run against the whole corpus. The standard
-two-stage design: cheap retriever fetches ~20 candidates, expensive
-cross-encoder reorders them, top-5 go to the LLM.
+A bi-encoder (BGE-M3) embeds query and document separately, so similarity is
+a cheap dot product over precomputed vectors — fast enough to search the
+whole corpus. A cross-encoder reads the query and the document together
+through one transformer: far more accurate, far too slow to run on every
+chunk. Hence two stages: the cheap retriever fetches ~20 candidates, the
+cross-encoder reorders them, and the top 5 go to the LLM.
 """
 
 from __future__ import annotations
 
 from dataclasses import replace
 
-from cortex.ingest.store import SearchResult
+from cortex.ingest.store import RetrievalTrace, SearchResult
 
 
 class Reranker:
@@ -37,7 +36,18 @@ class Reranker:
             return []
         scores = self._model.predict([(query, r.text) for r in results])
         order = sorted(range(len(results)), key=lambda i: float(scores[i]), reverse=True)
-        return [replace(results[i], score=round(float(scores[i]), 4)) for i in order[:top_k]]
+        return [
+            replace(
+                results[i],
+                score=round(float(scores[i]), 4),
+                # Keep the upstream ranks and add this stage's score to them.
+                trace=replace(
+                    results[i].trace or RetrievalTrace(),
+                    rerank_score=round(float(scores[i]), 4),
+                ),
+            )
+            for i in order[:top_k]
+        ]
 
 
 class RerankingRetriever:
@@ -62,3 +72,9 @@ class RerankingRetriever:
     def retrieve(self, query: str, top_k: int | None = None) -> list[SearchResult]:
         candidates = self._base.retrieve(query, top_k=self._candidate_k)
         return self._reranker.rerank(query, candidates, top_k=top_k or self._top_k)
+
+    def refresh(self) -> None:
+        """Propagate an index refresh to the base retriever, if it has one."""
+        refresh = getattr(self._base, "refresh", None)
+        if refresh is not None:
+            refresh()

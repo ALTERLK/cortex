@@ -2,9 +2,8 @@
 
 Supported formats: .md, .txt (any UTF-8 text file), .pdf.
 
-NOTE (learning): the loader's only job is "bytes on disk → Python string."
-It does NOT chunk or embed — each stage of the pipeline does exactly one
-thing, so each stage can be tested and swapped independently.
+The loader only turns bytes on disk into text. Chunking and embedding are
+separate stages, so each one can be tested and replaced on its own.
 """
 
 from dataclasses import dataclass, field
@@ -63,9 +62,8 @@ def _load_text(path: Path) -> Document:
 
 
 def _load_pdf(path: Path) -> Document:
-    # NOTE (learning): pypdf is a pure-Python PDF reader. We join all pages
-    # with a double newline so paragraph-level chunking treats page breaks
-    # the same way it treats paragraph breaks.
+    # Pages are joined with a blank line so the chunker treats a page break
+    # like a paragraph break.
     from pypdf import PdfReader  # imported lazily: only needed for PDF paths
 
     reader = PdfReader(str(path))

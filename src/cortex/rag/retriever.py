@@ -1,24 +1,25 @@
-"""Retriever: embed a query and fetch the most relevant chunks from the store.
+"""Dense retriever: embed a query and fetch the nearest chunks from the store.
 
-NOTE (learning): the Retriever is deliberately thin — it only converts a
-natural-language query into a vector and delegates to the VectorStore. All
-ranking logic lives in Qdrant; all embedding logic lives in Embedder. Each
-class has one job.
+Deliberately thin — embedding lives in `Embedder`, ranking lives in Qdrant.
 """
 
 from __future__ import annotations
 
+from dataclasses import replace
+
 from cortex.ingest.embedder import Embedder
-from cortex.ingest.store import SearchResult, VectorStore
+from cortex.ingest.store import RetrievalTrace, SearchResult, VectorStore
 
 
 class Retriever:
     """Semantic search over the vector store.
 
     Args:
-        store:   Populated VectorStore instance.
-        embedder: Embedder used at ingest time (must be the same model).
-        top_k:   Number of passages to return per query.
+        store:    Populated VectorStore instance.
+        embedder: Embedder used at ingest time. Queries must be embedded with
+                  the same model, or the vectors live in different spaces and
+                  similarity scores are meaningless.
+        top_k:    Number of passages to return per query.
     """
 
     def __init__(
@@ -32,16 +33,10 @@ class Retriever:
         self._top_k = top_k
 
     def retrieve(self, query: str, top_k: int | None = None) -> list[SearchResult]:
-        """Return the top-k most relevant passages for *query*.
-
-        Args:
-            query: Natural-language search query.
-            top_k: Optional per-call override of the instance default.
-
-        NOTE (learning): the query is embedded with the same model used at
-        ingest time. Using a different model would compare apples to oranges —
-        the vectors would be in different spaces and similarity scores would be
-        meaningless.
-        """
+        """Return the top-k most similar passages for *query*."""
         vector = self._embedder.embed([query])[0]
-        return self._store.search(vector, top_k=top_k or self._top_k)
+        hits = self._store.search(vector, top_k=top_k or self._top_k)
+        return [
+            replace(hit, trace=RetrievalTrace(dense_rank=rank))
+            for rank, hit in enumerate(hits, 1)
+        ]

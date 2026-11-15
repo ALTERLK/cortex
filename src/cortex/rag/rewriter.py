@@ -6,9 +6,9 @@ response?") has no retrievable content — "it" only resolves through the
 conversation. Agent mode dodges this because the LLM writes its own search
 queries with history in context; rag mode needs this explicit rewrite step.
 
-NOTE (learning): this is the cheapest of the adaptive-retrieval techniques —
-one small LLM call, only when history exists. The trade-off is latency
-(one extra round trip before retrieval starts).
+It costs one small LLM call, and only when history exists; single-turn
+questions pay nothing. The trade-off is latency: one extra round trip
+before retrieval can start.
 """
 
 from __future__ import annotations
