@@ -4,9 +4,11 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      # Persist the Qdrant index across container restarts
-      - ./data/qdrant:/app/data/qdrant
-      # Mount docs so you can ingest without rebuilding the image
-      - ./docs:/app/docs
+      # The index and uploaded documents live outside the container, so they
+      # survive restarts and rebuilds.
+      - ./data:/app/data
+      # Documents to index, mounted read-only: `POST /ingest {"directory": "corpus"}`
+      - ./corpus:/app/corpus:ro
+    # Secrets are injected at run time, never copied into the image.
     env_file: .env
     restart: unless-stopped

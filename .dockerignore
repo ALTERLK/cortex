@@ -1,0 +1,26 @@
+# Keep secrets, local state and build noise out of the image.
+# `COPY` only sees what this file lets through.
+
+# Secrets — never bake these into an image layer.
+.env
+.env.*
+!.env.example
+
+# Local state and caches
+data/
+corpus/
+.venv/
+**/__pycache__/
+.pytest_cache/
+.ruff_cache/
+hf_cache/
+
+# Not needed at runtime
+.git/
+.github/
+tests/
+docs/
+promo/
+study/
+*.md
+!README.md

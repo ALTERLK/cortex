@@ -3,7 +3,10 @@
 Usage:
     uv run python scripts/serve.py
     uv run python scripts/serve.py --port 8080
-    uv run python scripts/serve.py --reload          # auto-reload on code changes
+    uv run python scripts/serve.py --host 0.0.0.0     # listen on all interfaces (containers)
+    uv run python scripts/serve.py --reload           # auto-reload on code changes
+
+For a guided start that checks the setup first, use scripts/demo.py.
 """
 
 import argparse
@@ -18,13 +21,13 @@ import uvicorn
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Run the Cortex API server.")
-    parser.add_argument("--host", default="0.0.0.0")
+    # Localhost by default: the API has no authentication unless API_KEY is set.
+    parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=8000)
     parser.add_argument("--reload", action="store_true", help="Enable auto-reload (dev only)")
     args = parser.parse_args()
 
-    print(f"Starting Cortex API on http://{args.host}:{args.port}")
-    print("Docs: http://localhost:8000/docs")
+    print(f"Starting Cortex on http://{args.host}:{args.port}  (API docs at /docs)")
     uvicorn.run(
         "cortex.api.app:create_app",
         factory=True,

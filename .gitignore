@@ -1,25 +1,32 @@
+# Python
 __pycache__/
 *.py[cod]
 *.egg-info/
 .pytest_cache/
-uv.lock.bak
+.ruff_cache/
 .venv/
 venv/
+uv.lock.bak
+
+# Secrets
 .env
-data/qdrant/
-!data/eval_set.json
+
+# Runtime state: the vector index, uploads, logs, scratch eval output
+data/
+
+# Fetched corpus — reproducible with scripts/fetch_corpus.py
+corpus/
+
+# Editors and OS
 .vscode/
 .idea/
 .DS_Store
+
+# Local tooling and personal notes
 .claude/
-data/*.log
-corpus/
+.codex/
+AGENTS.md
+CLAUDE.md
 INTERVIEW_PREP.md
 study/
 promo/
-CLAUDE.md
-.codex/
-AGENTS.md
-data/uploads/
-data/eval-smoke/
-data/qdrant-eval/
