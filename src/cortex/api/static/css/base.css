@@ -101,7 +101,7 @@ a:hover { text-decoration: underline; }
   border-radius: var(--radius-sm);
   color: var(--text-2);
   font-size: var(--text-sm);
-  font-weight: 550;
+  font-weight: 500;
 }
 
 .nav-link:hover { background: var(--surface-2); color: var(--text); text-decoration: none; }
@@ -166,7 +166,7 @@ a:hover { text-decoration: underline; }
   background: var(--surface);
   color: var(--text);
   font-size: var(--text-sm);
-  font-weight: 550;
+  font-weight: 500;
 }
 .btn:hover { background: var(--surface-2); }
 
@@ -179,7 +179,7 @@ a:hover { text-decoration: underline; }
   background: var(--surface-2);
   color: var(--text-2);
   font-size: var(--text-xs);
-  font-weight: 550;
+  font-weight: 500;
   white-space: nowrap;
 }
 .chip.accent { background: var(--accent-soft); color: var(--accent); }

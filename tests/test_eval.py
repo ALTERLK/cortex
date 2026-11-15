@@ -265,3 +265,20 @@ def test_is_refusal_detection() -> None:
     assert is_refusal("I don't have information about that in the provided documents.")
     assert is_refusal("Sorry, I DO NOT have information on this topic.")
     assert not is_refusal("Django models are defined by subclassing models.Model.")
+
+
+def test_is_refusal_recognises_a_refusal_written_in_chinese() -> None:
+    from cortex.rag.citations import is_refusal
+
+    assert is_refusal("我在知识库中没有找到关于 PyTorch autograd 的内容。")
+    assert is_refusal("所提供的文档中没有关于 Django ORM 的说明。")
+    assert not is_refusal("后台任务在响应返回之后执行 [1]。")
+
+
+def test_is_refusal_only_looks_at_the_opening() -> None:
+    from cortex.rag.citations import is_refusal
+
+    # A real answer that notes one gap near its end is not a refusal.
+    answer = "Path parameters are validated from the URL [1]. " * 6
+    answer += "I don't have information about headers."
+    assert not is_refusal(answer)

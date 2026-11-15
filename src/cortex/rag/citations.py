@@ -25,13 +25,27 @@ _REFUSAL_MARKERS = (
     "do not have information",
     "no information about",
     "not covered in the provided documents",
+    # Models sometimes refuse in the question's language despite the
+    # instruction. Chinese questions are common here, so the usual Chinese
+    # phrasings are recognised too; a refusal must not be scored as a failure
+    # because of the language it was written in.
+    "没有找到",
+    "未找到",
+    "找不到",
+    "没有关于",
+    "没有相关",
 )
+
+# A refusal opens the answer. Looking only at the opening keeps an answer
+# that says "the documents do not cover X" halfway through a real answer
+# from being mistaken for one.
+_REFUSAL_WINDOW = 200
 
 
 def is_refusal(answer: str) -> bool:
-    """True when *answer* says the documents do not contain the answer."""
-    lowered = answer.lower()
-    return any(marker in lowered for marker in _REFUSAL_MARKERS)
+    """True when *answer* opens by saying the documents do not contain the answer."""
+    opening = answer[:_REFUSAL_WINDOW].lower()
+    return any(marker in opening for marker in _REFUSAL_MARKERS)
 
 
 _CITATION = re.compile(r"\[(\d{1,3})\]")
