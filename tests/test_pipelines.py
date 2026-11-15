@@ -263,3 +263,51 @@ def test_report_loads_the_original_bare_list_layout(tmp_path) -> None:
     assert report.results[0].generated_answer == "Answer."
     assert report.results[0].mode == "rag"      # default for runs that predate modes
     assert report.has_cost is False
+
+
+# ---------------------------------------------------------------------------
+# run_eval: a dropped connection costs a retry, not the run
+# ---------------------------------------------------------------------------
+
+
+class FlakyPipeline:
+    """Fails with a provider error a set number of times, then answers."""
+
+    def __init__(self, failures: int, meter: MeteredLLM | None = None) -> None:
+        self._failures = failures
+        self._meter = meter
+        self.attempts = 0
+
+    def run(self, qa: QAPair):
+        from cortex.eval.pipelines import PipelineOutput
+        from cortex.llm.base import LLMUnavailableError
+
+        self.attempts += 1
+        if self._meter is not None:
+            self._meter.chat([{"role": "user", "content": qa.question}])  # 100 in / 20 out
+        if self.attempts <= self._failures:
+            raise LLMUnavailableError("connection reset")
+        return PipelineOutput("Answer [1].", [passage("a.md")])
+
+
+def test_run_eval_retries_a_question_when_the_provider_drops(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr("cortex.eval.runner._RETRY_DELAYS_S", (0, 0, 0))
+    meter = MeteredLLM(ScriptedLLM(["x", "x", "x"]))
+    pipeline = FlakyPipeline(failures=2, meter=meter)
+    report = run_eval([QAPair("Q?", "A", ["a.md"])], pipeline, ScriptedLLM([JUDGE_5]),
+                      meter=meter, verbose=False)
+
+    assert pipeline.attempts == 3
+    assert report.results[0].correctness == 5.0
+    # Only the successful attempt is charged to the answer.
+    assert (report.results[0].llm_calls, report.results[0].input_tokens) == (1, 100)
+
+
+def test_run_eval_gives_up_after_the_last_retry(monkeypatch: pytest.MonkeyPatch) -> None:
+    from cortex.llm.base import LLMUnavailableError
+
+    monkeypatch.setattr("cortex.eval.runner._RETRY_DELAYS_S", (0, 0, 0))
+    pipeline = FlakyPipeline(failures=99)
+    with pytest.raises(LLMUnavailableError):
+        run_eval([QAPair("Q?", "A", ["a.md"])], pipeline, ScriptedLLM([]), verbose=False)
+    assert pipeline.attempts == 4  # the first try plus three retries

@@ -17,7 +17,9 @@ import re
 from dataclasses import dataclass
 
 # Phrases that signal an honest refusal. The system prompts mandate the
-# first one; the others catch close paraphrases.
+# first one, in English whatever the language of the question, precisely so
+# that a refusal can be detected by string matching; the others catch close
+# paraphrases.
 _REFUSAL_MARKERS = (
     "don't have information",
     "do not have information",

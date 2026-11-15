@@ -12,6 +12,7 @@ from __future__ import annotations
 import json
 import math
 import time
+from collections.abc import Callable
 from dataclasses import asdict, dataclass, field, fields
 from pathlib import Path
 
@@ -22,8 +23,8 @@ from cortex.eval.metrics import (
     judge_answer,
     mrr,
 )
-from cortex.eval.pipelines import Pipeline
-from cortex.llm.base import LLMClient
+from cortex.eval.pipelines import Pipeline, PipelineOutput
+from cortex.llm.base import LLMClient, LLMUnavailableError
 from cortex.llm.metering import MeteredLLM
 from cortex.rag.citations import check_citations, is_refusal
 
@@ -253,11 +254,7 @@ def run_eval(
         if verbose:
             print(f"[{i:2d}/{n}] ({qa.category}) {qa.question[:55]}…")
 
-        if meter is not None:
-            meter.reset()
-        started = time.perf_counter()
-        out = pipeline.run(qa)
-        latency_ms = round((time.perf_counter() - started) * 1000, 1)
+        out, latency_ms = _answer_with_retry(pipeline, qa, meter)
 
         # RAG is scored on its top-k. The agent has no single ranked list —
         # it is scored on every passage it retrieved during the run, so its
@@ -274,7 +271,8 @@ def run_eval(
                 "faithfulness": 5.0 if refused else 1.0,
             }
         else:
-            scores = judge_answer(qa.question, qa.expected_answer, out.answer, judge_llm)
+            scores = _retrying(lambda out=out, qa=qa: judge_answer(
+                qa.question, qa.expected_answer, out.answer, judge_llm))
 
         results.append(
             EvalResult(
@@ -306,6 +304,37 @@ def run_eval(
             )
 
     return EvalReport(results, meta or {})
+
+
+# A run makes hundreds of LLM calls over many minutes; one dropped
+# connection should cost a retry, not the whole run.
+_RETRY_DELAYS_S = (5, 20, 60)
+
+
+def _retrying[T](call: Callable[[], T]) -> T:
+    """Run *call*, retrying when the LLM provider is unreachable."""
+    for delay in _RETRY_DELAYS_S:
+        try:
+            return call()
+        except LLMUnavailableError as exc:
+            print(f"       provider unavailable ({str(exc)[:80]}); retrying in {delay}s")
+            time.sleep(delay)
+    return call()  # last attempt: let the error propagate
+
+
+def _answer_with_retry(
+    pipeline: Pipeline, qa: QAPair, meter: MeteredLLM | None
+) -> tuple[PipelineOutput, float]:
+    """Answer one question; cost and latency are those of the successful attempt."""
+
+    def attempt() -> tuple[PipelineOutput, float]:
+        if meter is not None:
+            meter.reset()  # a failed attempt must not be charged to the answer
+        started = time.perf_counter()
+        out = pipeline.run(qa)
+        return out, round((time.perf_counter() - started) * 1000, 1)
+
+    return _retrying(attempt)
 
 
 def _mean(values: list[float]) -> float:

@@ -87,3 +87,72 @@ def test_settings_have_sane_defaults(monkeypatch: pytest.MonkeyPatch) -> None:
     assert settings.llm_base_url == "https://api.deepseek.com"
     assert settings.llm_model == "deepseek-chat"
     assert settings.llm_api_key == ""
+
+
+# ---------------------------------------------------------------------------
+# Adapter: models that reject sampling parameters
+# ---------------------------------------------------------------------------
+
+
+class _FakeCompletions:
+    """Stands in for client.chat.completions; optionally rejects `temperature`."""
+
+    def __init__(self, *, rejects_temperature: bool, other_error: bool = False) -> None:
+        self._rejects = rejects_temperature
+        self._other_error = other_error
+        self.calls: list[dict[str, Any]] = []
+
+    def create(self, **params: Any) -> Any:
+        import httpx
+        import openai
+
+        self.calls.append(params)
+        response = httpx.Response(400, request=httpx.Request("POST", "http://test/v1/chat/completions"))
+        if self._other_error:
+            raise openai.BadRequestError("messages: field required", response=response, body=None)
+        if self._rejects and "temperature" in params:
+            raise openai.BadRequestError(
+                "`temperature` is deprecated for this model.", response=response, body=None)
+
+        message = type("Message", (), {"content": "ok", "tool_calls": None})()
+        choice = type("Choice", (), {"message": message, "finish_reason": "stop"})()
+        usage = type("Usage", (), {"prompt_tokens": 7, "completion_tokens": 3})()
+        return type("Completion", (), {"choices": [choice], "usage": usage})()
+
+
+def _client_with(completions: _FakeCompletions) -> OpenAICompatibleClient:
+    client = OpenAICompatibleClient(api_key="k", base_url="http://test/v1", model="m")
+    client._client = type("SDK", (), {"chat": type("Chat", (), {"completions": completions})()})()
+    return client
+
+
+def test_adapter_sends_temperature_when_the_model_accepts_it() -> None:
+    completions = _FakeCompletions(rejects_temperature=False)
+    response = _client_with(completions).chat([{"role": "user", "content": "hi"}], temperature=0.1)
+    assert response.content == "ok"
+    assert completions.calls == [
+        {"model": "m", "temperature": 0.1, "messages": [{"role": "user", "content": "hi"}]}
+    ]
+
+
+def test_adapter_drops_temperature_once_the_model_rejects_it() -> None:
+    completions = _FakeCompletions(rejects_temperature=True)
+    client = _client_with(completions)
+
+    first = client.chat([{"role": "user", "content": "hi"}], temperature=0.1)
+    assert first.usage == TokenUsage(7, 3)
+    # One rejected attempt, then the same request without the parameter.
+    assert ["temperature" in call for call in completions.calls] == [True, False]
+
+    client.chat([{"role": "user", "content": "again"}], temperature=0.1)
+    # The adapter remembers: later calls do not pay for the discovery again.
+    assert ["temperature" in call for call in completions.calls] == [True, False, False]
+
+
+def test_adapter_does_not_swallow_unrelated_bad_requests() -> None:
+    from cortex.llm.base import LLMUnavailableError
+
+    completions = _FakeCompletions(rejects_temperature=False, other_error=True)
+    with pytest.raises(LLMUnavailableError, match="field required"):
+        _client_with(completions).chat([{"role": "user", "content": "hi"}])
+    assert len(completions.calls) == 1  # no blind retry

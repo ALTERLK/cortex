@@ -28,8 +28,8 @@ class Settings(BaseSettings):
     llm_max_retries: int = 2
     # Prices in USD per million tokens, used only for the cost estimate shown
     # in logs and the UI. Set them to your provider's rates.
-    llm_price_input_per_m: float = 1.0
-    llm_price_output_per_m: float = 5.0
+    llm_price_input_per_m: float = 0.10
+    llm_price_output_per_m: float = 0.50
 
     # --- local model cache ---
     # Override to redirect HuggingFace downloads away from the default C: cache.

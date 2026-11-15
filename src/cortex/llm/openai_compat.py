@@ -19,7 +19,7 @@ import json
 from collections.abc import Iterator
 from typing import Any
 
-from openai import OpenAI, OpenAIError
+from openai import BadRequestError, OpenAI, OpenAIError
 
 from cortex.llm.base import LLMResponse, LLMUnavailableError, TokenUsage, ToolCall
 
@@ -49,6 +49,29 @@ class OpenAICompatibleClient:
             timeout=timeout_s, max_retries=max_retries,
         )
         self._model = model
+        # Newer reasoning models reject sampling parameters outright. This
+        # flips to False the first time the provider says so (see _create).
+        self._send_temperature = True
+
+    def _create(self, *, temperature: float, **params: Any) -> Any:
+        """Call chat.completions.create, dropping `temperature` if the model rejects it.
+
+        Callers ask for a temperature because low randomness suits grounded
+        answers and grading. Some models no longer accept the parameter and
+        answer 400. Rather than make every caller know which models those
+        are, the adapter retries once without it and remembers, so the
+        process pays for the discovery with a single failed request.
+        """
+        if self._send_temperature:
+            try:
+                return self._client.chat.completions.create(
+                    model=self._model, temperature=temperature, **params
+                )
+            except BadRequestError as exc:
+                if "temperature" not in str(exc).lower():
+                    raise
+                self._send_temperature = False
+        return self._client.chat.completions.create(model=self._model, **params)
 
     def chat(
         self,
@@ -57,13 +80,11 @@ class OpenAICompatibleClient:
         tools: list[dict[str, Any]] | None = None,
         temperature: float = 0.3,
     ) -> LLMResponse:
+        params: dict[str, Any] = {"messages": messages}
+        if tools:  # the API rejects an empty list
+            params["tools"] = tools
         try:
-            response = self._client.chat.completions.create(
-                model=self._model,
-                messages=messages,
-                tools=tools or None,  # the API rejects an empty list
-                temperature=temperature,
-            )
+            response = self._create(temperature=temperature, **params)
         except OpenAIError as exc:
             raise LLMUnavailableError(f"LLM provider error: {exc}") from exc
 
@@ -107,10 +128,9 @@ class OpenAICompatibleClient:
         finish = "stop"
 
         try:
-            stream = self._client.chat.completions.create(
-                model=self._model,
-                messages=messages,
+            stream = self._create(
                 temperature=temperature,
+                messages=messages,
                 stream=True,
                 stream_options={"include_usage": True},
             )
