@@ -260,8 +260,8 @@ def test_report_by_category() -> None:
 
 
 def test_is_refusal_detection() -> None:
-    from cortex.eval.runner import _is_refusal
+    from cortex.rag.citations import is_refusal
 
-    assert _is_refusal("I don't have information about that in the provided documents.")
-    assert _is_refusal("Sorry, I DO NOT have information on this topic.")
-    assert not _is_refusal("Django models are defined by subclassing models.Model.")
+    assert is_refusal("I don't have information about that in the provided documents.")
+    assert is_refusal("Sorry, I DO NOT have information on this topic.")
+    assert not is_refusal("Django models are defined by subclassing models.Model.")

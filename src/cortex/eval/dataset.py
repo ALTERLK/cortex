@@ -34,7 +34,7 @@ class QAPair:
     history: list[dict] = field(default_factory=list)
 
 
-def load_dataset(path: Path | str = "data/eval_set.json") -> list[QAPair]:
+def load_dataset(path: Path | str = "benchmarks/eval_set.json") -> list[QAPair]:
     """Load the evaluation set from a JSON file.
 
     Required keys: question, expected_answer, expected_sources.

@@ -1,10 +1,12 @@
 """Evaluation metrics: hit-rate@k, MRR, and LLM-as-judge.
 
-NOTE (learning): these are the two standard axes for RAG evaluation:
-  - Retrieval quality: did the right chunks come back?  (hit-rate, MRR)
-  - Answer quality: is the generated text correct and grounded? (LLM-as-judge)
+RAG quality has two independent axes, and both are measured:
+  - Retrieval: did the right chunks come back?            (hit-rate, MRR)
+  - Answer:    is the generated text correct and grounded? (LLM-as-judge)
 
-Running both is what separates a serious RAG project from a demo.
+A wrong answer with a correct retrieval is a generation problem; a wrong
+answer with a missed retrieval is a search problem. Separate metrics tell
+the two apart.
 """
 
 from __future__ import annotations
@@ -14,6 +16,7 @@ import re
 
 from cortex.ingest.store import SearchResult
 from cortex.llm.base import LLMClient
+from cortex.llm.postprocess import strip_thinking
 
 # ---------------------------------------------------------------------------
 # Retrieval metrics (pure functions — easy to unit-test)
@@ -84,15 +87,13 @@ def judge_answer(
     generated_answer: str,
     llm: LLMClient,
 ) -> dict[str, float]:
-    """Ask the LLM to score a generated answer.  Returns correctness + faithfulness.
+    """Ask an LLM to score a generated answer. Returns correctness + faithfulness.
 
-    NOTE (learning): using an LLM to grade LLM output ("LLM-as-judge") is the
-    current industry standard for answer quality at scale. It is not perfect —
-    the judge can share biases with the generator — but it is far more
-    practical than human annotation for a 20-50 item eval set.
+    LLM-as-judge scales where human annotation does not, at the price of
+    judge bias: scores are comparable between runs graded by the same judge,
+    not absolute measurements.
     """
-    # Strip <thinking> blocks that extended-thinking models prepend.
-    clean = re.sub(r"<thinking>.*?</thinking>\s*", "", generated_answer, flags=re.DOTALL).strip()
+    clean = strip_thinking(generated_answer)
 
     prompt = _JUDGE_PROMPT.format(
         question=question,
@@ -114,8 +115,7 @@ def _parse_judge_response(text: str) -> dict[str, float]:
     - JSON wrapped in a markdown code fence
     - <thinking> blocks before the JSON
     """
-    # Strip thinking blocks
-    text = re.sub(r"<thinking>.*?</thinking>\s*", "", text, flags=re.DOTALL)
+    text = strip_thinking(text)
     # Extract first JSON object
     match = re.search(r"\{[^{}]*\}", text, re.DOTALL)
     if match:
