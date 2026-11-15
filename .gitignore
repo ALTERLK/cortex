@@ -18,3 +18,8 @@ INTERVIEW_PREP.md
 study/
 promo/
 CLAUDE.md
+.codex/
+AGENTS.md
+data/uploads/
+data/eval-smoke/
+data/qdrant-eval/
