@@ -13,7 +13,6 @@ Options:
 """
 
 import argparse
-import io
 import os
 import socket
 import sys
@@ -23,8 +22,8 @@ import urllib.request
 import webbrowser
 from pathlib import Path
 
-if hasattr(sys.stdout, "buffer"):
-    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
+# UTF-8 output even on consoles whose default code page cannot encode the text.
+sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 ROOT = Path(__file__).resolve().parent.parent
 os.chdir(ROOT)  # relative paths (.env, data/) are resolved from the repo root

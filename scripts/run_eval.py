@@ -11,12 +11,11 @@ Every run is saved under benchmarks/results/ and shows up on the /eval dashboard
 """
 
 import argparse
-import io
 import sys
 from datetime import date
 
-if hasattr(sys.stdout, "buffer"):
-    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
+# UTF-8 output even on consoles whose default code page cannot encode the text.
+sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 from cortex.agent.loop import AgentLoop
 from cortex.agent.router import QueryRouter

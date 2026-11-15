@@ -8,11 +8,10 @@ Usage:
     uv run python scripts/check_llm.py
 """
 
-import io
 import sys
 
-if hasattr(sys.stdout, "buffer"):
-    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
+# UTF-8 output even on consoles whose default code page cannot encode the text.
+sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 from cortex.llm import MissingAPIKeyError, get_llm_client
 

@@ -9,12 +9,11 @@ Usage:
 """
 
 import argparse
-import io
 import sys
 from pathlib import Path
 
-if hasattr(sys.stdout, "buffer"):
-    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
+# UTF-8 output even on consoles whose default code page cannot encode the text.
+sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 from cortex.config import get_settings
 from cortex.ingest.embedder import Embedder

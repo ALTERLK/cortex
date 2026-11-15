@@ -16,15 +16,14 @@ Usage:
 """
 
 import argparse
-import io
 import shutil
 import subprocess
 import sys
 import tempfile
 from pathlib import Path
 
-if hasattr(sys.stdout, "buffer"):
-    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
+# UTF-8 output even on consoles whose default code page cannot encode the text.
+sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 CORPUS = Path("corpus")
 
