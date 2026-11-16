@@ -5,9 +5,9 @@ Three ways to run Cortex, from simplest to most exposed.
 | | Local launcher | Docker | Hugging Face Space |
 |---|---|---|---|
 | For | development, demos | a server you control | a public demo link |
-| Needs | Python 3.12+, uv | Docker | a Hugging Face account |
+| Needs | Python 3.12+, uv | Docker | a Hugging Face account with a PRO subscription |
 | Index | `data/qdrant` on disk | mounted volume | baked into the image |
-| Status | tested | **not tested** — see below | prepared, not yet built |
+| Status | tested | **not tested** — see below | prepared, **never built** |
 
 ## Local launcher
 
@@ -81,7 +81,10 @@ Steps, with `<user>` standing for your Hugging Face username:
    several minutes.
 
 The Space runs with the public-demo settings below. Like the Docker path,
-it has **not been built yet**; the first build is the test.
+it has **not been built**. When this was attempted, Hugging Face refused to
+create a Docker Space on a free account (hosting Docker Spaces on the free
+CPU tier requires a PRO subscription), so the files are kept as a starting
+point rather than a verified recipe.
 
 ## Settings for anything public
 
