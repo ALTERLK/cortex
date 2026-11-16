@@ -1,39 +1,48 @@
-# Cortex Roadmap
+# Roadmap
 
-Tracking document. One milestone = one self-contained, runnable increment.
-Workflow per milestone: concept lesson → implementation → run it → interview
-self-test → hands-on exercise → commit + decision log entry.
+What is built, what is next, and what was considered and dropped.
 
-## Phase 1 — a deployed, evaluated, agentic RAG
+## Done
 
-| # | Milestone | Status | Acceptance |
-|---|---|---|---|
-| M0 | Skeleton + LLM abstraction (provider-agnostic client, config, smoke test) | ✅ done | `uv run pytest` green; smoke test makes a live chat + tool-call round |
-| M1 | Document loading + chunking (.md/.txt/.pdf, recursive chunking + overlap, metadata) | ✅ done | chunker unit-tested; CLI prints chunks for a sample doc |
-| M2 | Embeddings + vector store (local BGE-M3, Qdrant, incremental ingest) | ✅ done | ingest a folder; nearest-neighbor search returns sensible hits |
-| M3 | Retrieval + cited generation — **first usable RAG** | ✅ done | CLI Q&A answers with [1][2] citations grounded in sources |
-| M4 | Agent layer (hand-written tool-use loop; LLM decides when/what to retrieve) | ✅ done | multi-step questions trigger ≥2 retrievals; max-iteration guard tested |
-| M5 | Evaluation harness — **the differentiator** (30–50 Q eval set; hit-rate@k, MRR; LLM-as-judge) | ✅ done | `eval` command outputs a scored report; baseline numbers recorded here |
-| M6 | FastAPI service + observability + deployment (SSE streaming; latency/token/cost logs; Docker) | ✅ done | SSE streaming live on `/ask/stream`; logs show per-request cost; cloud deploy pending |
-| M7 | Liquid-glass web frontend (hand-written HTML/CSS/JS chat UI with clickable citations, served by FastAPI) | ✅ done | demo-able at `/`; citations expand to source passages; 79 tests green |
+| Area | What exists |
+|---|---|
+| Ingest | `.md` / `.txt` / `.pdf` loading, recursive chunking with overlap, BGE-M3 embeddings, Qdrant local mode, incremental re-ingest by content hash |
+| Retrieval | Dense, hybrid (hand-written BM25 + reciprocal rank fusion), cross-encoder reranking, follow-up query rewriting; per-passage retrieval trace |
+| Answering | Cited single-pass RAG; a hand-written tool-use loop with a tool registry, stable citation numbers, step and token limits, context compaction; auto mode that escalates to the agent on failure |
+| Evaluation | 50-question set in five categories; hit-rate, MRR, LLM-judged correctness, refusal and citation checks; cost and latency per question; RAG / agent / auto compared on the same questions; prompt-injection benchmark |
+| Service | FastAPI with SSE streaming, document upload, background ingest with progress, structured logs with request ids, API key, rate limit, daily budget, read-only mode |
+| Interfaces | Web UI (chat, evidence panel, evaluation dashboard; light/dark, English/Chinese); MCP server exposing search and ask |
 
-## Phase 2 — from "works" to "advanced" (order matters)
+## Next
 
-| # | Direction | Status | Resume payoff |
-|---|---|---|---|
-| P2-A | Adaptive retrieval: query rewrite, hybrid (dense+sparse), reranker | ✅ done (2026-06-12) | hit@5 77.8%→88.9%, MRR 0.567→0.640 on eval v2; LLM retrieval plan deferred |
-| P2-B | Long-term memory: conversation summarization + user profile store | ⬜ | cross-session continuity |
-| P2-C | Multi-agent (router / retrieval / synthesis) with LangGraph | ⬜ | orchestration-framework keyword + scheduling story |
-| opt | Expose Cortex as an MCP server ✅ (done early, 2026-06-11); multimodal ingest ⬜ | partial | low effort, high keyword value |
+Ordered by how much the evaluation says each would help.
 
-Dropped: LoRA fine-tuning (lowest relevance to the AI-application-engineer target, highest time cost).
+1. **A second judge.** Correctness is graded by the same model that
+   answers. A stronger, separate judge would remove the self-grading bias
+   and is the cheapest way to make every number here more trustworthy.
+2. **Larger, held-out eval set.** Fifty questions give wide confidence
+   intervals — one question is two points — and the prompts were tuned while
+   looking at this set. A second set that is never looked at would show how
+   much of the measured gain is real.
+3. **Streaming the agent's final answer.** Agent steps stream as they
+   happen, but the answer arrives in one piece because the loop uses
+   non-streaming calls. Streaming it needs tool-call deltas to be
+   reassembled; the wait is the most visible rough edge in the UI.
+4. **Conversation memory.** History is sent whole, capped at twelve turns.
+   Summarising older turns would keep long conversations coherent without
+   growing the prompt.
+5. **Index at scale.** BM25 is rebuilt in memory from every chunk at
+   startup. That is instant at 8k chunks and would not be at 1M; Qdrant's
+   sparse vectors would move it into the store.
 
-## Baseline numbers (filled at M5, updated by every Phase 2 change)
+## Considered and dropped
 
-| Date | Change | Hit-rate@5 | MRR | Correctness | Faithfulness | Notes |
-|---|---|---|---|---|---|---|
-| 2026-06-11 | M5 baseline (chunk_size=400, overlap=50, BGE-M3, top_k=5) | 85.0% | 0.758 | 3.45/5 | 4.25/5 | RETIRED: 20 questions over a 3-file toy corpus — kept for history, not comparable |
-| 2026-06-12 | Eval v2 dense baseline (360-doc corpus, 8,342 chunks, 50 questions) | 77.8% | 0.567 | 3.54/5 | 4.16/5 | honest baseline; refusal accuracy 100% |
-| 2026-06-12 | + hybrid retrieval (hand-written BM25 + RRF) | 82.2% | 0.589 | 3.44/5 | 4.06/5 | crosslingual 70%→90% |
-| 2026-06-12 | + cross-encoder reranker (bge-reranker-v2-m3) | 84.4% | 0.611 | 3.68/5 | 4.24/5 | multihop 70%→90%, factual 95% |
-| 2026-06-12 | + LLM query rewriting for follow-ups | **88.9%** | **0.640** | **3.92/5** | **4.34/5** | followup 40%→80%; current production config |
+- **An orchestration framework for the agent.** The loop is about a hundred
+  lines. A framework would replace code that is easy to read with
+  configuration that is not, and nothing measured so far needs a graph of
+  agents.
+- **Fine-tuning the embedding model.** Retrieval misses in the eval set are
+  mostly phrasing mismatches that hybrid search and reranking already
+  recover; fine-tuning costs far more than it would return here.
+- **A JavaScript framework for the UI.** Three pages and a handful of
+  modules do not need a build step.

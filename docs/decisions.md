@@ -1,201 +1,284 @@
-# Design Decisions Log
+# Design decisions
 
-One entry per significant decision. This file doubles as interview prep:
-each entry should be explainable in ~30 seconds with a trade-off.
+Why Cortex is built the way it is. Each entry states the choice, what it
+was chosen over, and what it costs. Numbers quoted here come from
+[evaluation.md](evaluation.md), which has the full tables.
 
-## 2026-06-11 · M0
+## Scope
 
-- **DeepSeek as first LLM provider, behind an abstraction.** OpenAI-compatible API,
-  ~100x cheaper than frontier models (matters when eval runs make hundreds of calls),
-  payable/reachable from China. The `LLMClient` protocol + `get_llm_client()` factory
-  keep every call site provider-agnostic, so switching to Claude/GPT later is a
-  config change, not a rewrite.
-- **No LangChain/LangGraph in Phase 1.** The agent loop, retrieval, and prompting are
-  hand-written so every design is explainable in depth. LangGraph enters in Phase 2
-  (multi-agent) where orchestration genuinely needs a framework.
-- **`Protocol` over ABC for the LLM interface.** Structural typing means tests can use
-  a plain fake class with no inheritance; production adapters stay decoupled.
-- **Adapter normalizes responses, not requests.** Requests use the de-facto-standard
-  OpenAI message format; only the response object is mapped into our `LLMResponse`.
-  Normalizing both would be ceremony without benefit at this stage.
-- **uv + Python 3.12 + src layout + hatchling.** Current industry-standard packaging;
-  src layout prevents accidental imports of uninstalled code.
-- **Secrets via pydantic-settings + .env (git-ignored).** Single `get_settings()`
-  entry point; `.env.example` documents required variables without values.
-- **Renamed adapter to `OpenAICompatibleClient` / `LLM_API_KEY`.** Switched live
-  provider from DeepSeek direct to Claude via 4SAPI (OpenAI-compatible proxy).
-  Proved the abstraction works: zero call-site changes outside `config.py` and the
-  adapter file itself.
+**No RAG or agent framework.** Retrieval, prompting, the agent loop and the
+evaluation harness are written directly against an LLM API. The pieces are
+small — the agent loop is about a hundred lines, BM25 about eighty — and
+owning them means every behaviour measured in the evaluation can be traced
+to a line of code and changed. The cost is that nothing comes for free:
+streaming, retries, tool-call plumbing and tracing each had to be written.
 
-## 2026-06-11 · M1
+**One process, local state.** The vector index is a directory on disk and
+rate limits live in memory. This keeps the project runnable with one
+command and no services. Everything that would break with a second
+instance — the job table, the limiters, the BM25 index — is marked as such
+where it is defined.
 
-- **Recursive character splitting over fixed-size splitting.** Tries semantic
-  separators in priority order (\n\n → \n → space → char) so paragraph boundaries
-  are respected when possible, falling back to finer splits only when necessary.
-  Trade-off: slightly more complex than a naïve fixed-size split, but produces more
-  semantically coherent chunks — important because chunk quality sets the RAG ceiling.
-- **Piece-level overlap, not character-level.** After saving a chunk, the tail
-  pieces (up to `overlap` chars total) are carried into the next chunk's starting
-  set. True character-level overlap would require splitting inside a piece; piece-level
-  overlap is simpler and sufficient for preventing boundary cuts on most sentences.
-- **`Document` → `Chunk` pipeline keeps metadata through every stage.** Each Chunk
-  carries `source` (filename) and `chunk_index` so the final answer can always be
-  traced back to its origin file — the citation requirement drives this from day one.
-- **pypdf for PDF loading, lazy import.** Only imported when a .pdf path is detected,
-  so the non-PDF code path has no startup cost from the PDF library.
+## LLM access
 
-## 2026-06-11 · M2
+**A protocol, and one adapter.** Application code depends on `LLMClient`,
+a `typing.Protocol` with `chat` and `chat_stream`. A protocol is checked
+structurally, so test fakes are plain classes with no inheritance. The one
+real implementation speaks the OpenAI chat-completions format, which nearly
+every provider and gateway accepts; switching provider is three environment
+variables.
 
-- **BGE-M3 for embeddings, local via sentence-transformers.** Multilingual (Chinese +
-  English), 1024-dim, no API cost. HF_HOME redirected to E: drive via config to avoid
-  filling the limited C: system partition.
-- **Qdrant local file mode, no Docker.** `QdrantClient(path=...)` stores the index
-  on disk; API is identical to Docker/cloud modes so switching later is one line.
-- **Idempotent upserts via deterministic UUID.** Each chunk ID is SHA-256(source +
-  chunk_index) truncated to a UUID. Re-ingesting the same file updates in place —
-  no duplicates accumulate across runs.
-- **`query_points()` over deprecated `search()`.** qdrant-client ≥1.7 renamed the
-  search method; noted in code for future SDK upgrades.
+**Provider quirks stop at the adapter.** Three were met in practice:
 
-## 2026-06-11 · M3
+- Tool-call arguments arrive as a JSON string and are parsed once, at the
+  boundary.
+- Some reasoning models write their reasoning into the content inside
+  `<thinking>` tags — and not always spelled that way. The filter accepts
+  the variants actually observed, and its streaming form holds back any
+  trailing fragment that could still become a tag, because a tag can be
+  split across two chunks.
+- Newer models reject `temperature`. The adapter retries once without it
+  and remembers, so callers keep asking for low randomness and the request
+  succeeds either way. The price is one failed request per process.
 
-- **Context and question in one user message.** Putting numbered passages and the
-  question in the same message (rather than system+user split) improves citation
-  adherence — most models follow inline instructions more reliably than system-level
-  ones when the task is referencing specific numbered items.
-- **Temperature=0.1 for generation.** Factual grounded answers benefit from low
-  temperature; creativity is not a goal here. Retrieval already provides the
-  relevant information.
-- **Generator returns passages alongside the answer.** The CLI and future API
-  layers can display source provenance without re-querying the store — one round
-  trip does both retrieval and generation context.
+**Token prices are configuration.** The cost shown in the UI is an
+estimate from two numbers in `.env`, not something the code knows about any
+model.
 
-## 2026-06-11 · M4
+## Ingest
 
-- **Hand-written loop over any framework.** The entire agent is a for-loop over
-  LLM calls; no LangChain/LangGraph. This makes every step debuggable and
-  explainable, which is the Phase 1 goal. LangGraph enters at P2-C where
-  multi-agent orchestration genuinely earns its complexity.
-- **Max-iterations guard (default 10).** Without it, a hallucinating or confused
-  LLM can call tools forever. The guard is the minimum viable safety mechanism;
-  a production system would also add a budget cap in tokens.
-- **Tool result re-serialises arguments to JSON string.** The OpenAI protocol
-  requires `function.arguments` to be a JSON *string*, not a dict. Our ToolCall
-  stores a parsed dict internally; we serialise back at the protocol boundary.
-- **`<thinking>` blocks stripped in the CLI.** The extended-thinking model
-  (claude-haiku-4-5-20251001-thinking) emits reasoning in `<thinking>` tags;
-  stripping them keeps the displayed answer clean without losing the actual reply.
+**Recursive character chunking.** Text is split on paragraph breaks, then
+lines, then spaces, falling to a finer separator only for pieces that are
+still too large. Chunks are 400 characters with 50 of overlap. Overlap is
+carried in whole pieces rather than exact characters: hitting the number
+exactly would mean cutting a sentence in half.
 
-## 2026-06-12 · P2-A (adaptive retrieval) + de-toy round
+**Deterministic ids and a content hash.** A chunk's id is derived from its
+source path and index, so re-ingesting overwrites instead of duplicating.
+Each chunk also stores the hash of its file: an unchanged file is skipped,
+and a changed file has its old chunks deleted first — otherwise a file that
+shrinks would leave its last chunks behind.
 
-- **Real corpus before any retrieval work.** 360 public documents (FastAPI docs
-  EN+ZH, uv docs, 4 arXiv papers) → 8,342 chunks, fetched reproducibly by
-  scripts/fetch_corpus.py (corpus/ itself is git-ignored). Retrieval numbers
-  measured on 3 self-authored files are not numbers; these are.
-- **Eval set v2 is category-stratified and includes traps.** 50 questions:
-  factual / multihop / crosslingual (Chinese questions over English docs) /
-  followup (carry history) / unanswerable (correct behaviour = refusal, scored
-  deterministically by refusal markers — no judge bias on the easiest cases).
-  Question wording is paraphrased, never copied from the docs, to limit leakage.
-- **BM25 hand-written, not a library or Qdrant sparse vectors.** ~80 lines,
-  jieba for CJK + regex for Latin; index rebuilt at startup from the chunks
-  already in Qdrant (one source of truth, no sync problem). Trade-off: O(corpus)
-  memory and startup scan — fine at 8k chunks, revisit at 1M.
-- **RRF over score mixing.** Cosine similarities and BM25 weights live on
-  incomparable scales; reciprocal-rank fusion uses only ranks (k=60). No tuning,
-  no normalisation headaches, robust default.
-- **Reranker as a second stage, not a replacement.** bge-reranker-v2-m3
-  cross-encoder re-scores the fused top-20 into a final top-5: bi-encoder for
-  recall at scale, cross-encoder for precision on a shortlist. Costs extra
-  latency per query on CPU — measured and reported, not hidden.
-- **Query rewriting only when history exists.** One small LLM call converts
-  "它是在响应之前还是之后执行？" into a standalone query; zero cost for
-  single-turn traffic; falls back to the raw question on any failure.
-- **Incremental ingest is now real.** Chunks carry a sha256 file hash; unchanged
-  files are skipped, changed files are delete-then-rewritten (fixes stale chunks
-  surviving file shrinkage). Source labels are root-relative paths so en/zh
-  translations of index.md no longer collide.
-- **Provider failures are a type, not a stack trace.** Adapters normalize vendor
-  exceptions into LLMUnavailableError; the API maps it to 502 (or an in-band SSE
-  `error` event mid-stream). Auth = X-API-Key with constant-time compare;
-  rate limiting = hand-written per-IP sliding window; request ids flow through a
-  ContextVar into every structured log line.
+**Source labels are paths, not file names.** The FastAPI docs exist in
+English and Chinese with identical file names. Labelling chunks by path
+relative to the ingest root keeps them apart, and uploaded documents get an
+`uploads/` prefix so they cannot collide with the corpus.
 
-## 2026-06-11 · Phase 1.5 (global improvement round)
+## Retrieval
 
-- **Agent exposed via `mode` parameter, not a separate endpoint.** One /ask
-  endpoint with `mode: "rag" | "agent"` keeps the client contract uniform; the
-  response schema is a superset (tool_calls/iterations only filled in agent mode).
-- **`chat_stream` yields deltas, then one final LLMResponse.** A single generator
-  covers both needs (display + usage accounting) without callbacks or futures.
-  Deliberately no `tools` parameter: streaming tool-call fragments is protocol
-  complexity the agent loop avoids by streaming only the final answer.
-- **Agent streaming = tool events, not token deltas.** `run_events()` yields each
-  ToolCallRecord live; the final answer arrives as one event. Live progress with
-  zero tool-call-delta parsing; true token streaming stays rag-mode-only.
-- **`ThinkingStreamFilter` is a stateful scanner.** `<thinking>` tags arrive torn
-  across stream chunks ("`<thi`" + "`nking>`"), so the filter holds back any
-  suffix that could be a partial tag and releases it when disambiguated.
-- **Stateless multi-turn: the browser owns the conversation.** History rides in
-  every request (server caps at 12 turns); no sessions, no sticky routing.
-  History `role` is validated to user/assistant — "system" is rejected to block
-  prompt injection through the history channel.
-- **MCP server reuses the RAG components directly.** ~100 lines of glue expose
-  search/ask as MCP tools over stdio; lazy singletons keep the handshake instant
-  (the embedding model loads on first tool call, not at startup).
-- **Two stdio-transport hazards found the hard way.** (1) stdout IS the JSON-RPC
-  channel — HF/tqdm progress bars must be disabled or they corrupt the protocol.
-  (2) FastMCP runs tools in a worker thread, and importing torch from a non-main
-  thread deadlocks on Windows — the fix is warming the import in the main thread
-  before `mcp.run()`, while the model itself still loads lazily.
+**Hybrid, because the two retrievers fail differently.** Embeddings find
+passages that mean the same thing in different words and across languages;
+BM25 finds exact rare tokens — flag names, error codes — that embeddings
+blur. On the evaluation set, adding BM25 raised hit-rate@5 from 77.8% to
+82.2%, almost all of it on Chinese questions over English documents.
 
-## 2026-06-11 · M7
+**BM25 is written by hand.** It is short, and the part that matters for
+this corpus is the tokenizer: Chinese has no spaces, so text containing CJK
+characters is segmented with jieba while Latin text is split by regex. A
+library would have hidden that choice.
 
-- **Hand-written HTML/CSS/JS over Streamlit (and over React).** The owner asked for
-  an iOS-style liquid-glass aesthetic; Streamlit's closed component structure can't
-  deliver it, and React would add a Node toolchain plus a new knowledge domain to a
-  backend-focused project. Three static files served by FastAPI need no build step
-  and keep every line explainable.
-- **Performance budget for glass effects.** `backdrop-filter` (real-time blur) is
-  restricted to three fixed panels (navbar, composer, source cards); scrolling chat
-  bubbles use pre-mixed rgba colors that look like glass but cost nothing. All
-  animations touch only `transform`/`opacity` (GPU compositor properties), the
-  ambient background is a `position:fixed` layer composited once, and
-  `prefers-reduced-motion` disables the drift animations.
-- **XSS-safe rendering without a framework.** All user/LLM text enters the DOM via
-  `textContent`, never `innerHTML`. Citation markers `[N]` are parsed with a regex
-  split so the only constructed elements are chips containing a validated integer.
-- **`SourceRef` gained a `text` field.** The expandable citation cards need the
-  passage text; returning it in `/ask` avoids a second round trip per citation.
+**Reciprocal rank fusion, not score mixing.** Cosine similarities and BM25
+scores are on unrelated scales, so a weighted sum needs normalising and
+tuning. RRF uses only each passage's rank in each list; it has one constant
+and no tuning.
 
-## 2026-06-11 · M6
+**The sparse index is derived, and rebuilt atomically.** Qdrant is the only
+persistent store; BM25 is built in memory from its chunks. When an ingest
+job finishes, a new index is built on the side and swapped in with one
+assignment, so a concurrent query sees the old index or the new one, never
+a mixture. Before this, documents added through the API were reachable by
+dense search only until the next restart.
 
-- **FastAPI with lifespan for component initialization.** The embedding model and
-  Qdrant store are loaded once at startup via `@asynccontextmanager async def lifespan`.
-  Requests reuse the already-loaded objects — no 2-second BGE-M3 load per request.
-- **app.state over Depends() for heavy singletons.** The retriever, generator, store,
-  and embedder live on `app.state`, injected via `request.app.state` in route handlers.
-  For unit tests, `app.router.lifespan_context` is replaced with a fake that injects
-  stub objects — no real models load, tests run in milliseconds.
-- **Structured JSON logging in middleware.** Every HTTP request produces one JSON log
-  line with method, path, status, and latency_ms. The `/ask` handler adds a second
-  log line with token counts and cost estimate — separating transport observability
-  (middleware) from business observability (handler) keeps each layer focused.
-- **Cost estimate at the handler, not the middleware.** Only the `/ask` handler knows
-  the token counts returned by the LLM, so cost logging belongs there, not in
-  cross-cutting middleware.
-- **Dockerfile pre-bakes BGE-M3 into the image.** `RUN uv run python -c "SentenceTransformer(...)"` 
-  during build means the container starts instantly rather than downloading 2.3 GB at
-  runtime. Trade-off: larger image (~3 GB) vs. fast, predictable startup.
+**Reranking works, and is off by default.** A cross-encoder that reads
+query and passage together re-scores the fused top 20. It raises hit-rate
+to 84.4% and helps multi-hop questions most — and on CPU it adds about ten
+seconds to a query. That is the wrong trade for an interactive demo, so the
+default strategy is `hybrid` and reranking is a setting.
 
-## 2026-06-11 · M5
+**Follow-ups are rewritten, single questions are not.** "Does it run before
+or after?" contains nothing to search for. With history present, one small
+LLM call turns it into a standalone query; without history there is no
+call. Any failure falls back to the original question.
 
-- **LLM-as-judge uses the same model as the generator.** In production you
-  would separate them to avoid self-grading bias, but for a single-provider
-  Phase 1 setup the bias is acceptable and the simplicity wins.
-- **Fallback to 2.5/5 on unparseable judge output.** Rather than crashing the
-  entire eval run when the judge returns malformed JSON, we log the default and
-  continue. Robustness over precision for a development eval harness.
-- **Baseline numbers (2026-06-11):** Hit-rate@5 = 85%, MRR = 0.758,
-  Correctness = 3.45/5, Faithfulness = 4.25/5. These are the numbers to beat
-  in Phase 2 with hybrid search and reranking.
+**Every passage carries its trace.** Each stage records what it knows — the
+rank in the dense list, the rank in the BM25 list, the fused score, the
+rerank score — on the passage itself. This was added for the UI and turned
+out to be the fastest way to debug retrieval.
+
+## Generation
+
+**Passages and question share one user message.** Numbered passages sit
+directly above the question. Citation instructions are followed more
+reliably when the things to cite are adjacent to the request.
+
+**The refusal sentence is fixed, in English.** When the passages do not
+answer the question, the model must open with one exact sentence, whatever
+language the question is in. A fixed sentence is what makes refusals
+detectable without a judge — in the evaluation, and at run time for auto
+mode. Models do not always comply: one agent answer refused correctly in
+Chinese, so the detector also accepts the usual Chinese phrasings.
+
+**Retrieved text is fenced and declared to be data.** Passages go inside
+`<context>` tags and the system prompt says nothing inside them is an
+instruction. The effect is measured: on eight attacks run three times each,
+2 of 24 succeeded without the guard and 0 of 24 with it. The one attack
+that worked imitated a system message — the kind a fence addresses.
+
+## Agent
+
+**A plain loop.** Send the conversation and the tool schemas; run the tools
+the model asks for; repeat until it answers in text. The loop is a
+generator that yields each step as it happens, and the non-streaming entry
+point just drains it, so there is one implementation.
+
+**Schemas live next to their implementation.** Tools are methods marked
+with `@tool`, and the executor collects them at construction. Adding a tool
+is adding a method; the schema cannot drift from the code because they are
+written together.
+
+**Citation numbers belong to a run, not to a search.** Originally each
+search numbered its results from `[1]`, so after two searches `[2]` was
+ambiguous — and the API returned no sources for agent answers at all, so
+citations could not be clicked. Now a per-run table gives each passage one
+number for the whole run. It is per-run rather than on the executor
+because the executor is shared by every request.
+
+**Tool failures are observations.** An unknown tool, a wrong argument type
+or an exception inside a tool is returned to the model as an error message
+it can act on, rather than ending the run.
+
+**A repeated search says so.** Passages the run already has are not printed
+again; a search that returns nothing new says exactly that. Without it the
+model kept rephrasing the same query — in an early run one question took
+ten searches — and every repeat was re-sent on each later turn. In the
+final evaluation the longest run used five.
+
+**Limits end in an answer, not an error.** At the step limit or the token
+budget the model is told to answer from what it has. Only if it still
+produces nothing does the run report that it stopped.
+
+**Compaction is triggered by the provider's own count.** Every turn
+re-sends the whole history, so cost grows with the square of the run
+length. When the prompt size the provider reported for the last call
+passes a threshold, older tool results are replaced by one-line stubs that
+keep their citation numbers. Using the reported count avoids guessing with
+a tokenizer. On this corpus runs are short and the guard rarely fires; it
+exists for long runs and is covered by tests.
+
+## Auto mode
+
+**The hypothesis was wrong, and the default reflects that.** The plan was a
+router: classify each question up front, send hard ones to the agent, and
+get agent quality at close to RAG cost. Measured, the classifier sent 4% of
+questions to the agent, gained almost nothing, and cost more than RAG on
+every request because it adds a call to each one.
+
+**Escalate on failure instead.** Auto mode answers with RAG and hands over
+to the agent only when that answer is a refusal or cites nothing — two
+conditions that need no LLM call to detect. It scored 4.02 against the
+classifier's 3.78 for 15% more cost, and an answer that is not escalated
+costs exactly what RAG costs.
+
+**Its ceiling is known, and so is its waste.** Escalation closed about a
+third of the gap between RAG (3.72) and the agent (4.68). Weak RAG answers
+are mostly grounded but incomplete, and nothing short of a judge can see
+that. And a refusal is one of the triggers, so a correctly refused
+unanswerable question is escalated too: five of the eleven escalations in
+the evaluation were exactly that, each paying agent prices to reach the same
+answer. If quality matters more than cost, the agent is the right mode;
+auto is the cost-aware default, not a free lunch. The classifier is kept,
+selectable, so the comparison can be re-run.
+
+## Evaluation
+
+**Categories, including questions with no answer.** The set has factual,
+cross-lingual, multi-hop and follow-up questions, plus traps the corpus
+cannot answer. A single blended score would hide where each change helps;
+the retrieval stages each fixed a different category.
+
+**Pipelines behind one interface.** RAG, agent and auto each implement
+`run(question)`, so the loop that scores them cannot tell them apart and
+the comparison is like for like.
+
+**Cost is measured, not estimated.** The system under test talks to the LLM
+through a wrapper that counts every call — including the rewrite and
+routing calls a pipeline makes internally. The judge uses an unwrapped
+client so grading is not charged to the pipeline.
+
+**Deterministic where possible.** Trap questions are scored by the refusal
+check, not the judge. Citations are checked by matching numbers against the
+source list. Only the correctness of real answers needs an LLM.
+
+**Known weaknesses are written down.** Fifty questions, one judge that is
+also the answering model, no sampling control on current models, and
+prompts adjusted while looking at this set. [evaluation.md](evaluation.md)
+lists what each of these does to the numbers.
+
+## API
+
+**Two endpoints, one generator.** `/ask/stream` forwards `(event, payload)`
+pairs as Server-Sent Events; `/ask` folds the same pairs into one JSON
+body. They cannot disagree because there is nothing to keep in sync.
+
+**Errors after the first byte go in-band.** Once a stream has started the
+status code is already sent, so a provider failure is reported as an
+`error` event. Before that point it is a 502.
+
+**The server holds no conversation.** The client sends prior turns with
+each request and the server forwards at most twelve. Roles are restricted
+to user and assistant so a client cannot inject a system message through
+the history.
+
+**Long work returns 202.** Ingest and upload start a background job and
+return its id; the client polls for progress. Embedding a large folder
+takes minutes, which is longer than a request should stay open.
+
+**Uploads are a raw request body.** The file is streamed and counted as it
+arrives, so an oversized upload is cut off at the limit rather than
+buffered first, and no multipart parser is needed. The file name is
+reduced to its base name and a safe character set, and only document types
+the loader understands are accepted.
+
+**Limits in layers.** An optional API key compared in constant time; a
+sliding-window limit per client; a daily budget across all clients, which
+is what actually bounds the bill of a public demo; and a read-only switch.
+Behind a proxy the client address must come from `X-Forwarded-For`, which
+is only trusted when explicitly enabled.
+
+## Web UI
+
+**Plain HTML, CSS and ES modules.** There is no build step: the browser
+loads the modules as written, and the server ships them as static files.
+For three views this is less machinery than a framework's toolchain. The
+cost is that state handling is by hand — each message is one object,
+stream events update it, and small functions redraw the part that changed.
+
+**Untrusted text never becomes markup by concatenation.** Answers are
+markdown from a model that has read arbitrary documents. They are converted
+to HTML, sanitized against an allowlist of formatting tags, and only then
+are citation markers replaced — by walking text nodes and creating
+elements, never by editing the HTML string. Images are not allowed, since
+an image URL in an answer would make the browser fetch it.
+
+**Dependencies are vendored.** The two libraries the UI uses are checked in
+at pinned versions. The interface works with no internet connection, which
+matters for a demo.
+
+**Blur only where nothing scrolls under it.** `backdrop-filter` is limited
+to the composer and the mobile top bar. A blur over scrolling content is
+recomputed every frame.
+
+## Deployment
+
+**The launcher checks before it starts.** A missing key, an empty index or
+a provider that does not answer each produce one line saying what to do,
+instead of a stack trace thirty seconds into startup.
+
+**Offline when the model is cached.** With the embedding model on disk the
+launcher sets `HF_HUB_OFFLINE`, because the libraries otherwise check for
+updates at startup and that check hangs where the hub is unreachable.
+
+**Secrets stay out of images.** The original Dockerfile copied the whole
+project into the image and there was no `.dockerignore`, so `.env` would
+have gone with it. Secrets are now excluded at build time and injected at
+run time.
