@@ -30,7 +30,7 @@ addStrings({
     "ev.mode.lead": "The same questions answered three ways: one retrieval pass (RAG), the tool-use loop (Agent), and Auto, which uses the agent only when needed. Higher is better; further right costs more.",
     "ev.mode.note": "Tokens are as billed, including a fixed per-call overhead of about 4k tokens added by the API gateway, which weighs on pipelines that make several calls. An agent run is scored on every passage it retrieved, so its \"source found\" is not hit@5. The judge is the same model as the system under test.",
     "ev.take.title": "Against single-pass RAG",
-    "ev.take.base": "the baseline: {score} correctness at {cost} per question.",
+    "ev.take.base": "the baseline: {score} correctness at {cost} per 1,000 questions.",
     "ev.take.line": "{delta} correctness for ×{mult} the cost.",
     "ev.take.cat": "Largest gain — {cat}: {a} → {b}",
     "ev.nav.ret": "Retrieval stages",
@@ -44,9 +44,9 @@ addStrings({
     "ev.col.calls": "LLM calls",
     "ev.col.tokens": "Tokens",
     "ev.col.latency": "Latency",
-    "ev.col.cost": "Cost / question",
+    "ev.col.cost": "Cost / 1k questions",
     "ev.col.agent": "Used agent",
-    "ev.axis.cost": "cost per question (USD)",
+    "ev.axis.cost": "cost per 1,000 questions (USD)",
     "ev.axis.correct": "correctness (1–5)",
     "ev.cat.title": "Correctness by question type",
     "ev.cat.lead": "Where each pipeline wins. A blended average hides this: a pipeline can be worse overall and still be the right choice for one kind of question.",
@@ -79,7 +79,7 @@ addStrings({
     "ev.mode.lead": "同一批问题用三种方式回答：单次检索（RAG）、工具调用循环（Agent），以及只在需要时才启用 Agent 的自动模式。越高越好，越靠右越贵。",
     "ev.mode.note": "token 数为实际计费值，其中包含 API 网关每次调用固定附加的约 4k token 开销，调用次数多的链路受影响更大。Agent 的“找到来源”按整个过程中检索到的全部段落计算，不等同于 hit@5。裁判模型与被测系统是同一个模型。",
     "ev.take.title": "对比单次检索 RAG",
-    "ev.take.base": "基线：正确性 {score}，每题 {cost}。",
+    "ev.take.base": "基线：正确性 {score}，每千题 {cost}。",
     "ev.take.line": "正确性 {delta}，成本为 ×{mult}。",
     "ev.take.cat": "提升最大 — {cat}：{a} → {b}",
     "ev.nav.ret": "检索各阶段",
@@ -93,9 +93,9 @@ addStrings({
     "ev.col.calls": "LLM 调用",
     "ev.col.tokens": "Tokens",
     "ev.col.latency": "耗时",
-    "ev.col.cost": "每题成本",
+    "ev.col.cost": "每千题成本",
     "ev.col.agent": "启用 Agent",
-    "ev.axis.cost": "每题成本（美元）",
+    "ev.axis.cost": "每千题成本（美元）",
     "ev.axis.correct": "正确性（1–5）",
     "ev.cat.title": "各题型的正确性",
     "ev.cat.lead": "每种链路分别赢在哪里。总平均分会掩盖这一点：一条链路整体更差，却可能正是某类问题的最佳选择。",
@@ -117,6 +117,8 @@ const SVG_NS = "http://www.w3.org/2000/svg";
 
 const pct = (x, digits = 1) => (x == null ? "—" : `${(x * 100).toFixed(digits)}%`);
 const score = (x) => (x == null ? "—" : x.toFixed(2));
+// A question costs a fraction of a cent, so cost is shown per 1,000 questions.
+const per1k = (usd) => (usd == null ? "—" : `$${(usd * 1000).toFixed(2)}`);
 const catName = (c) => { const key = `cat.${c}`; const s = t(key); return s === key ? c : s; };
 
 function s(tag, attrs = {}, ...children) {
@@ -247,7 +249,7 @@ function modeBlock(group) {
       h("td", { text: m.avg_input_tokens != null ? fmtInt(m.avg_input_tokens + m.avg_output_tokens) : "—" }),
       h("td", { text: m.avg_latency_ms != null ? `${(m.avg_latency_ms / 1000).toFixed(1)} s` : "—" }),
       h("td", { class: m.avg_cost_usd === bestCost ? "best" : "" },
-        m.avg_cost_usd != null ? `$${m.avg_cost_usd.toFixed(4)}` : "—",
+        per1k(m.avg_cost_usd),
         mult && run !== baseline ? h("span", { class: "mult", text: `×${mult.toFixed(1)}` }) : null),
       h("td", { text: pct(m.agent_share, 0) }));
   });
@@ -276,7 +278,7 @@ function takeaways(group, baseline) {
     const m = run.summary;
     if (run === baseline) {
       return h("li", {}, h("b", { text: shortLabel(run) }),
-        t("ev.take.base", { score: score(m.correctness), cost: `$${m.avg_cost_usd?.toFixed(4) ?? "—"}` }));
+        t("ev.take.base", { score: score(m.correctness), cost: per1k(m.avg_cost_usd) }));
     }
     const delta = m.correctness - base.correctness;
     const mult = m.avg_cost_usd && base.avg_cost_usd ? m.avg_cost_usd / base.avg_cost_usd : null;
@@ -319,7 +321,7 @@ function tradeoffPlot(group) {
   const step = xMax / 4;
   for (let i = 0; i <= 4; i += 1) {
     const label = s("text", { x: x(step * i), y: H - M.b + 15, "text-anchor": "middle" });
-    label.textContent = `$${(step * i).toFixed(3)}`;
+    label.textContent = per1k(step * i);
     svg.append(label);
   }
   svg.append(s("line", { class: "axis-line", x1: M.l, x2: W - M.r, y1: H - M.b, y2: H - M.b }));
@@ -329,16 +331,36 @@ function tradeoffPlot(group) {
   yTitle.textContent = t("ev.axis.correct");
   svg.append(xTitle, yTitle);
 
-  pts.forEach((run) => {
-    const cx = x(run.summary.avg_cost_usd);
-    const cy = y(run.summary.correctness);
-    svg.append(s("circle", { class: `pt ${run.meta.mode}`, cx, cy, r: 6 }));
-    // Labels go left of points in the right half so they stay inside the plot.
-    const left = cx > (M.l + W - M.r) / 2;
-    const label = s("text", { class: "pt-label", x: cx + (left ? -10 : 10), y: cy - 9, "text-anchor": left ? "end" : "start" });
-    label.textContent = shortLabel(run);
+  // Points first, then labels. Each label tries a few positions around its
+  // point and takes the first that stays inside the plot and clear of every
+  // point and every label already placed.
+  const dots = pts.map((run) => ({
+    run, cx: x(run.summary.avg_cost_usd), cy: y(run.summary.correctness), text: shortLabel(run),
+  }));
+  dots.forEach((d) => svg.append(s("circle", { class: `pt ${d.run.meta.mode}`, cx: d.cx, cy: d.cy, r: 6 })));
+
+  const placed = [];
+  const overlaps = (a, b) => a.x0 < b.x1 && b.x0 < a.x1 && a.y0 < b.y1 && b.y0 < a.y1;
+  const OFFSETS = [[10, -9, "start"], [-10, -9, "end"], [10, 15, "start"], [-10, 15, "end"],
+                   [0, -13, "middle"], [0, 21, "middle"], [10, -24, "start"], [-10, -24, "end"]];
+  for (const d of dots) {
+    const width = d.text.length * 6.3;
+    let choice = null;
+    for (const [dx, dy, anchor] of OFFSETS) {
+      const tx = d.cx + dx;
+      const x0 = anchor === "start" ? tx : anchor === "end" ? tx - width : tx - width / 2;
+      const box = { x0, x1: x0 + width, y0: d.cy + dy - 10, y1: d.cy + dy + 3 };
+      const inside = box.x0 >= M.l && box.x1 <= W - 2 && box.y0 >= 2 && box.y1 <= H - M.b;
+      const clear = placed.every((other) => !overlaps(box, other))
+        && dots.every((o) => o === d || !overlaps(box, { x0: o.cx - 7, x1: o.cx + 7, y0: o.cy - 7, y1: o.cy + 7 }));
+      if (inside && clear) { choice = { tx, ty: d.cy + dy, anchor, box }; break; }
+    }
+    choice ??= { tx: d.cx + 10, ty: d.cy - 9, anchor: "start", box: { x0: 0, x1: 0, y0: 0, y1: 0 } };
+    placed.push(choice.box);
+    const label = s("text", { class: "pt-label", x: choice.tx, y: choice.ty, "text-anchor": choice.anchor });
+    label.textContent = d.text;
     svg.append(label);
-  });
+  }
   return svg;
 }
 
