@@ -8,6 +8,10 @@
   previous request's passages. They are now stripped before the history is
   forwarded.
 
+### Changed
+- The example questions on the welcome screen follow the interface language, so the
+  Chinese interface shows Chinese questions.
+
 ## 1.1.0 — 2026-11-15
 
 ### Added

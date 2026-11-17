@@ -9,17 +9,28 @@
  */
 
 import { ApiError, ask } from "./api.js";
-import { applyI18n, t } from "./i18n.js";
+import { applyI18n, getLang, t } from "./i18n.js";
 import { renderMarkdown } from "./markdown.js";
 import { copyText, fmtCost, fmtInt, fmtMs, h, icon, store, toast } from "./ui.js";
 
 const HISTORY_SENT = 12;
 
+// Example questions, one per kind of question the system handles. The text follows
+// the interface language; the documents are mostly English either way, so the
+// Chinese versions also show cross-language retrieval.
 const EXAMPLES = [
-  { tag: "ex.fact", mode: "auto", q: 'What does a wildcard "*" in CORS allowed origins prevent you from doing?' },
-  { tag: "ex.cross", mode: "auto", q: "什么时候应该用 async def 定义路径操作函数，什么时候用普通 def？" },
-  { tag: "ex.multi", mode: "agent", q: "How would you start the FastAPI dev server inside a uv-managed project environment?" },
-  { tag: "ex.trap", mode: "auto", q: "How does Kubernetes decide when to restart a Pod?" },
+  { tag: "ex.fact", mode: "auto", q: {
+    en: 'What does a wildcard "*" in CORS allowed origins prevent you from doing?',
+    zh: "在 CORS 里，允许的来源设成通配符 * 会妨碍什么？" } },
+  { tag: "ex.cross", mode: "auto", q: {
+    en: "什么时候应该用 async def 定义路径操作函数，什么时候用普通 def？",
+    zh: "什么时候应该用 async def 定义路径操作函数，什么时候用普通 def？" } },
+  { tag: "ex.multi", mode: "agent", q: {
+    en: "How would you start the FastAPI dev server inside a uv-managed project environment?",
+    zh: "怎么在 uv 管理的项目环境里启动 FastAPI 开发服务器？" } },
+  { tag: "ex.trap", mode: "auto", q: {
+    en: "How does Kubernetes decide when to restart a Pod?",
+    zh: "Kubernetes 是怎么决定什么时候重启一个 Pod 的？" } },
 ];
 
 /* Route reasons the server sends in auto mode, mapped to translated text. */
@@ -67,10 +78,10 @@ export function mountChat(inspector) {
         h("div", { class: "examples" }, ...EXAMPLES.map((ex) =>
           h("button", {
             class: "example", type: "button",
-            onclick: () => { setMode(ex.mode); send(ex.q); },
+            onclick: () => { setMode(ex.mode); send(ex.q[getLang()]); },
           },
             h("span", { class: "chip", text: t(ex.tag) }),
-            h("span", { class: "q", text: ex.q }))))),
+            h("span", { class: "q", text: ex.q[getLang()] }))))),
     );
   }
 
