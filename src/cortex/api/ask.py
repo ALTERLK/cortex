@@ -37,7 +37,7 @@ from cortex.config import get_settings
 from cortex.ingest.store import SearchResult
 from cortex.llm.base import LLMUnavailableError, TokenUsage
 from cortex.llm.postprocess import ThinkingStreamFilter, strip_thinking
-from cortex.rag.citations import check_citations, is_refusal
+from cortex.rag.citations import check_citations, is_refusal, strip_citations
 from cortex.rag.generator import GeneratorResponse
 
 router = APIRouter()
@@ -100,7 +100,13 @@ class _Outcome:
 def _answer_events(body: AskRequest, state: Any) -> Iterator[Event]:
     """Run one request, yielding (event, payload) pairs as progress happens."""
     t0 = time.perf_counter()
-    history = [t.model_dump() for t in body.history[-_MAX_HISTORY_TURNS:]]
+    # Earlier answers go back to the model without their [N] markers: each
+    # request numbers its own passages, so old numbers would point at the
+    # wrong ones.
+    history = [
+        {"role": t.role, "content": strip_citations(t.content) if t.role == "assistant" else t.content}
+        for t in body.history[-_MAX_HISTORY_TURNS:]
+    ]
     outcome: _Outcome | None = None
     spent = TokenUsage(0, 0)  # usage beyond the answering pipeline: routing, a discarded first pass
 

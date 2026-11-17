@@ -80,3 +80,20 @@ def check_citations(answer: str, n_sources: int) -> CitationCheck:
         if number not in bucket:
             bucket.append(number)
     return CitationCheck(cited=cited, invalid=invalid)
+
+
+_CODE_SPLIT = re.compile(r"(```.*?```|`[^`\n]*`)", re.DOTALL)
+_MARKER = re.compile(r"[ \t]?\[\d{1,3}\]")
+
+
+def strip_citations(text: str) -> str:
+    """Remove [N] citation markers from *text*, leaving code untouched.
+
+    A cited answer carried into the next turn as history keeps its markers,
+    but every request numbers its own passages from [1]. Left in, "[2]" in
+    the history and "[2]" in the new context name different passages, and the
+    model starts correcting an answer that was never wrong.
+    """
+    parts = _CODE_SPLIT.split(text)
+    # re.split with one capture group alternates text, code, text, code, ...
+    return "".join(p if i % 2 else _MARKER.sub("", p) for i, p in enumerate(parts))

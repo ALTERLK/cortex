@@ -314,6 +314,19 @@ def test_ask_passes_history_to_generator(client: TestClient) -> None:
     assert client.app.state.generator.last_history == turns
 
 
+def test_ask_history_drops_citation_markers_from_earlier_answers(client: TestClient) -> None:
+    # Each request numbers its own passages, so an old "[2]" must not reach the
+    # model; the user's own turns are forwarded as written.
+    turns = [
+        {"role": "user", "content": "What is [1] in the spec?"},
+        {"role": "assistant", "content": "It runs after the response [1][3]. Use `items[0]`."},
+    ]
+    client.post("/ask", json={"question": "And before?", "history": turns})
+    forwarded = client.app.state.generator.last_history
+    assert forwarded[0]["content"] == "What is [1] in the spec?"
+    assert forwarded[1]["content"] == "It runs after the response. Use `items[0]`."
+
+
 def test_ask_history_truncated_to_cap(client: TestClient) -> None:
     # 20 turns sent; the server forwards only the most recent 12.
     turns = [

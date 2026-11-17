@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from cortex.rag.citations import check_citations
+from cortex.rag.citations import check_citations, strip_citations
 
 
 def test_valid_citations_are_collected_in_order_of_first_use() -> None:
@@ -48,3 +48,13 @@ def test_duplicates_are_reported_once() -> None:
 
 def test_as_dict_shape() -> None:
     assert check_citations("Yes [1].", 1).as_dict() == {"cited": [1], "invalid": [], "grounded": True}
+
+
+def test_strip_citations_removes_markers_and_the_space_before_them() -> None:
+    text = "Runs after the response [1][3]. Also this [2]."
+    assert strip_citations(text) == "Runs after the response. Also this."
+
+
+def test_strip_citations_leaves_code_alone() -> None:
+    text = "Use `items[0]` here [1].\n```\nx[2] = 1\n```"
+    assert strip_citations(text) == "Use `items[0]` here.\n```\nx[2] = 1\n```"

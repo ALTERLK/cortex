@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+- **Follow-up answers no longer "correct" a right answer.** An earlier answer sent back
+  as history still carried its `[N]` citation markers, which pointed at the
+  previous request's passages. They are now stripped before the history is
+  forwarded.
+
 ## 1.1.0 — 2026-11-15
 
 ### Added
